@@ -1,0 +1,2 @@
+# rough_to_illustration
+生成AIでラフ絵からイラストを作成するシステムのPoC
