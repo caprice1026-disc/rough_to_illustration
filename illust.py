@@ -11,6 +11,7 @@ from PIL import Image
 client = genai.Client()
 
 
+# クラスとして定義する必要があるかと言われると微妙
 @dataclass
 class GeneratedImage:
     """生成画像のメタデータと利用しやすい表現をまとめたコンテナ。"""
@@ -21,6 +22,10 @@ class GeneratedImage:
     prompt: str
 
 
+'''
+この関数いらない。解像度はパラメーターとして直接APIに渡す。プロンプトに記載する必要が無い
+参照: https://ai.google.dev/gemini-api/docs/image-generation?hl=ja#gemini-3-capabilities
+'''
 def _augment_prompt(prompt: str, aspect_ratio: Optional[str], resolution: Optional[str]) -> str:
     """README要件のパラメータをプロンプトに織り込んでAPIへ伝える。"""
 
@@ -34,7 +39,10 @@ def _augment_prompt(prompt: str, aspect_ratio: Optional[str], resolution: Option
     extra = " ".join(constraints)
     return f"{prompt.strip()}\n\nAdditional constraints: {extra}"
 
-
+'''
+この関数いらないはず。解像度はパラメーターとして直接APIに渡す。
+参照 https://ai.google.dev/gemini-api/docs/image-generation?hl=ja#gemini-3-capabilities
+'''
 def _resolution_to_media_config(resolution: Optional[str]) -> Optional[types.MediaResolution]:
     """
     READMEで例示された解像度をGoogle GeminiのMediaResolutionにマッピングする。
@@ -85,6 +93,7 @@ def generate_image(
         generation_kwargs["media_resolution"] = media_resolution
 
     response = client.models.generate_content(
+        # gemini-3-pro-image-previewに差し替えること
         model="gemini-2.5-flash-image",
         contents=[request_prompt, image],
         generation_config=types.GenerationConfig(**generation_kwargs),
