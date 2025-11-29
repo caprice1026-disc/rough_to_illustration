@@ -19,7 +19,7 @@ ASPECT_RATIO_OPTIONS = ["自動", "1:1", "4:5", "16:9"]
 RESOLUTION_OPTIONS = ["自動", "1K", "2K", "4K"]
 
 
-def build_prompt(color_instruction: str) -> str:
+def build_prompt(color_instruction: str, pose_instruction: str) -> str:
     """色指定を含めた基本プロンプトを生成する。"""
 
     base_prompt = textwrap.dedent(
@@ -28,9 +28,11 @@ def build_prompt(color_instruction: str) -> str:
         in the style of a high-quality anime. Pay close attention to the fidelity of the original sketch,
         fill in missing lines cleanly, and follow these color instructions to finish the artwork:
         {colors}
+        Follow these pose instructions to position the character:
+        {pose}
         """
     ).strip()
-    return base_prompt.format(colors=color_instruction.strip() or "No specific colors were provided.")
+    return base_prompt.format(colors=color_instruction.strip() or "No specific colors were provided.", pose=pose_instruction.strip() or "Please maintain the pose of the original image.")
 
 
 with st.form(key="illustration_form", clear_on_submit=False):
@@ -39,11 +41,20 @@ with st.form(key="illustration_form", clear_on_submit=False):
         "着色イメージや雰囲気",
         "帽子は赤、服は白ベースで差し色に青、肌は柔らかい色味でお願いします。",
     )
+    pose_instruction = st.text_area(
+        "ポーズの指示",
+        "キャラクターは元気にジャンプしているポーズでお願いします。",
+    )
     aspect_ratio_label = st.selectbox("アスペクト比（任意）", options=ASPECT_RATIO_OPTIONS, index=0)
     resolution_label = st.selectbox("解像度（任意）", options=RESOLUTION_OPTIONS, index=0)
 
     if uploaded_file:
-        st.image(Image.open(uploaded_file), caption="アップロードしたラフ絵", use_container_width=True)
+        st.image(
+            Image.open(uploaded_file),
+            caption="アップロードしたラフ絵",
+            width="stretch"
+        )
+        
 
     submitted = st.form_submit_button("イラスト生成")
 
@@ -53,7 +64,7 @@ if submitted:
     else:
         aspect_ratio = None if aspect_ratio_label == "自動" else aspect_ratio_label
         resolution = None if resolution_label == "自動" else resolution_label
-        prompt = build_prompt(color_instruction)
+        prompt = build_prompt(color_instruction, pose_instruction)
 
         try:
             uploaded_file.seek(0)
@@ -74,7 +85,7 @@ if submitted:
                 st.error(f"画像生成に失敗しました: {exc}")
             else:
                 st.success("イラストの生成が完了しました。")
-                st.image(generated.image, caption="生成されたイラスト", use_container_width=True)
+                st.image(generated.image, caption="生成されたイラスト", width="stretch")
                 st.download_button(
                     label="生成画像をダウンロード (PNG)",
                     data=generated.raw_bytes,
