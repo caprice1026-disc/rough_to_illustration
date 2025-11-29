@@ -3,10 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Optional
-
+import os
 from google import genai
 from google.genai import types
 from PIL import Image
+
+from dotenv import load_dotenv
+load_dotenv() # Streamlitは自動で環境変数を読み込まないので明示的に実行
 
 client = genai.Client()
 

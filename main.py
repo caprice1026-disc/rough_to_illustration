@@ -4,6 +4,7 @@ import textwrap
 
 import streamlit as st
 from PIL import Image
+import os
 
 from illust import generate_image
 
