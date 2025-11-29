@@ -3,10 +3,14 @@ from __future__ import annotations
 import textwrap
 
 import streamlit as st
+from oauth import require_login # 追加：認証モジュールを読み込む
 from PIL import Image
 import os
 
 from illust import generate_image
+
+# ここでログインを強制する（ここより下は認証済みユーザーのみ実行される）
+name, username, authenticator = require_login()
 
 st.set_page_config(page_title="ラフ絵 to イラスト", page_icon=":art:")
 st.title("ラフ絵から完成イラストを生成")
