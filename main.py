@@ -15,7 +15,7 @@ st.write(
 )
 
 ASPECT_RATIO_OPTIONS = ["自動", "1:1", "4:5", "16:9"]
-RESOLUTION_OPTIONS = ["自動", "720p", "1080p", "2K"]
+RESOLUTION_OPTIONS = ["自動", "1K", "2K", "4K"]
 
 
 def build_prompt(color_instruction: str) -> str:
