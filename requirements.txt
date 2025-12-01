@@ -2,3 +2,4 @@ streamlit
 Pillow
 google-genai
 python-dotenv
+streamlit-authenticator
