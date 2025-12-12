@@ -1,5 +1,6 @@
-streamlit
+Flask
+Flask-Login
+Flask-SQLAlchemy
 Pillow
 google-genai
 python-dotenv
-streamlit-authenticator

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title mb-4">新規登録</h2>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label" for="username">ユーザー名</label>
+            <input class="form-control" id="username" name="username" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="email">メールアドレス</label>
+            <input class="form-control" id="email" name="email" type="email" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="password">パスワード</label>
+            <input class="form-control" id="password" type="password" name="password" required>
+          </div>
+          <button class="btn btn-success" type="submit">登録する</button>
+          <a class="btn btn-link" href="{{ url_for('login') }}">既にアカウントをお持ちの方はこちら</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -9,7 +9,9 @@ from google.genai import types
 from PIL import Image
 
 from dotenv import load_dotenv
-load_dotenv() # Streamlitは自動で環境変数を読み込まないので明示的に実行
+
+# .env に記載したAPIキーなどの環境変数を読み込む
+load_dotenv()
 
 client = genai.Client()
 

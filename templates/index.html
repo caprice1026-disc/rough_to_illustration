@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title mb-3">ラフ絵から完成イラストを生成</h2>
+        <p class="text-muted">ラフ絵と色・ポーズの指示、任意のアスペクト比や解像度を指定してNano Banana(Gemini API)へ送信します。</p>
+        <form method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label" for="rough_image">ラフ絵（PNG/JPG/JPEG）</label>
+            <input class="form-control" type="file" id="rough_image" name="rough_image" accept="image/png, image/jpeg" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="color_instruction">着色イメージや雰囲気</label>
+            <textarea class="form-control" id="color_instruction" name="color_instruction" rows="3">帽子は赤、服は白ベースで差し色に青、肌は柔らかい色味でお願いします。</textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="pose_instruction">ポーズの指示</label>
+            <textarea class="form-control" id="pose_instruction" name="pose_instruction" rows="2">キャラクターは元気にジャンプしているポーズでお願いします。</textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="aspect_ratio">アスペクト比（任意）</label>
+              <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                {% for label in aspect_ratio_options %}
+                <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="resolution">解像度（任意）</label>
+              <select class="form-select" id="resolution" name="resolution">
+                {% for label in resolution_options %}
+                <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" type="submit">イラスト生成</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    {% if image_data %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body text-center">
+        <h3 class="card-title mb-3">生成されたイラスト</h3>
+        <img class="img-fluid rounded" src="{{ image_data }}" alt="生成イラスト">
+        <div class="mt-3">
+          <a class="btn btn-success" href="{{ url_for('download') }}">生成画像をダウンロード</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if prompt_text %}
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h4 class="card-title">APIに送信したプロンプト</h4>
+        <pre class="bg-light p-3 rounded" style="white-space: pre-wrap;">{{ prompt_text }}</pre>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
