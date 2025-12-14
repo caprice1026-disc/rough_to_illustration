@@ -16,6 +16,11 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    presets = db.relationship(
+        "IllustrationPreset",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def set_password(self, raw_password: str) -> None:
         """平文パスワードを安全なハッシュに変換して保存する。"""
@@ -26,6 +31,21 @@ class User(db.Model, UserMixin):
         """入力パスワードと保存済みハッシュを照合する。"""
 
         return check_password_hash(self.password_hash, raw_password)
+
+
+class IllustrationPreset(db.Model):
+    """ユーザーに紐づく色・ポーズのプリセット。"""
+
+    __tablename__ = "illustration_presets"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    name = db.Column(db.String(80), nullable=False)
+    color_instruction = db.Column(db.String(200), nullable=False)
+    pose_instruction = db.Column(db.String(160), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    user = db.relationship("User", back_populates="presets")
 
 
 @login_manager.user_loader

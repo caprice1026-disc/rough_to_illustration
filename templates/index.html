@@ -1,61 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<style>
-  .upload-dropzone {
-    border: 1px dashed rgba(255, 255, 255, 0.35);
-    border-radius: 16px;
-    padding: 16px;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.06);
-    transition: border-color 0.2s ease, background 0.2s ease;
-  }
-  .upload-dropzone.hover {
-    border-color: var(--accent);
-    background: rgba(31, 209, 249, 0.08);
-  }
-  .preview-image {
-    max-height: 260px;
-    border-radius: 12px;
-    object-fit: contain;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(0, 0, 0, 0.2);
-  }
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #dfe5ff;
-    font-size: 0.92rem;
-  }
-  .option-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 10px;
-    background: rgba(31, 209, 249, 0.12);
-    border: 1px solid rgba(31, 209, 249, 0.3);
-    color: #b8ecff;
-    font-size: 0.9rem;
-  }
-  .meta-label { color: #a8b3d7; font-size: 0.95rem; }
-  .loading-bar {
-    height: 4px;
-    width: 100%;
-    background: linear-gradient(90deg, rgba(124, 77, 255, 0.5), rgba(31, 209, 249, 0.7));
-    border-radius: 999px;
-    animation: shimmer 1.2s infinite;
-  }
-  @keyframes shimmer {
-    0% { filter: brightness(0.8); }
-    50% { filter: brightness(1.35); }
-    100% { filter: brightness(0.8); }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 
 <div class="row align-items-center g-4 mb-4">
   <div class="col-lg-8">
@@ -96,6 +41,51 @@
           <h2 class="card-title mb-0">生成リクエスト</h2>
           <span class="option-chip"><i class="bi bi-check2-circle"></i> ステップ 1</span>
         </div>
+
+        <div
+          class="preset-panel mb-3"
+          id="presetPanel"
+          data-presets='{{ presets_payload | tojson }}'
+        >
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h5 class="mb-0">マイプリセット</h5>
+              <small class="text-white-50">色とポーズの組み合わせを保存して再利用できます。</small>
+            </div>
+            <span class="badge preset-badge"><i class="bi bi-collection me-1"></i> {{ user_presets|length }} 件</span>
+          </div>
+          <div class="row g-2 align-items-end mb-2">
+            <div class="col-md-8">
+              <label class="form-label" for="presetSelect">保存済みプリセット</label>
+              <select class="form-select" id="presetSelect" name="preset_id">
+                <option value="">プリセットを選択</option>
+                {% for preset in user_presets %}
+                <option value="{{ preset.id }}">{{ preset.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4 preset-actions d-grid d-md-flex gap-2">
+              <button class="btn btn-outline-light flex-grow-1" type="button" id="applyPreset"><i class="bi bi-arrow-down-circle me-1"></i> 読込</button>
+              <form method="post" action="{{ url_for('main.delete_preset') }}" class="w-100" id="deletePresetForm">
+                <input type="hidden" name="preset_id" id="deletePresetId">
+                <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash3 me-1"></i> 削除</button>
+              </form>
+            </div>
+          </div>
+          <form class="row gy-2 gx-3 align-items-end" method="post" action="{{ url_for('main.create_preset') }}" id="presetCreateForm">
+            <div class="col-md-4">
+              <label class="form-label" for="preset_name">プリセット名</label>
+              <input class="form-control" type="text" id="preset_name" name="preset_name" maxlength="80" placeholder="例: 夕焼け元気">
+            </div>
+            <div class="col-md-8 text-md-end">
+              <input type="hidden" name="preset_color" id="preset_color_value">
+              <input type="hidden" name="preset_pose" id="preset_pose_value">
+              <small class="text-white-50 d-block">下の色・ポーズ欄の現在の入力を保存します。</small>
+              <button class="btn btn-primary mt-2" type="submit"><i class="bi bi-bookmark-plus me-1"></i> プリセット保存</button>
+            </div>
+          </form>
+        </div>
+
         <form id="generateForm" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3">
           <div>
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -199,85 +189,5 @@
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('generateForm');
-    const submitBtn = document.getElementById('generateButton');
-    const spinner = document.getElementById('loadingSpinner');
-    const submitLabel = document.getElementById('submitLabel');
-    const fileInput = document.getElementById('rough_image');
-    const previewImage = document.getElementById('previewImage');
-    const placeholder = document.getElementById('uploadPlaceholder');
-    const fileMeta = document.getElementById('fileMeta');
-    const dropzone = document.getElementById('uploadDropzone');
-    const clearButton = document.getElementById('clearImage');
-
-    const updateCounter = (textarea) => {
-      const targetId = textarea.dataset.counterTarget;
-      if (!targetId) return;
-      const target = document.getElementById(targetId);
-      if (!target) return;
-      const max = textarea.getAttribute('maxlength') || textarea.maxLength;
-      target.textContent = `${textarea.value.length}/${max}`;
-    };
-
-    document.querySelectorAll('[data-counter-target]').forEach((el) => {
-      updateCounter(el);
-      el.addEventListener('input', () => updateCounter(el));
-    });
-
-    const resetPreview = () => {
-      previewImage.classList.add('d-none');
-      previewImage.removeAttribute('src');
-      placeholder.classList.remove('d-none');
-      fileMeta.textContent = '';
-      fileInput.value = '';
-    };
-
-    clearButton.addEventListener('click', () => resetPreview());
-
-    const handleFile = (file) => {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        previewImage.src = e.target.result;
-        previewImage.classList.remove('d-none');
-        placeholder.classList.add('d-none');
-        const sizeKb = (file.size / 1024).toFixed(1);
-        fileMeta.textContent = `${file.name} / ${sizeKb} KB`;
-      };
-      reader.readAsDataURL(file);
-    };
-
-    fileInput.addEventListener('change', (event) => {
-      const [file] = event.target.files;
-      handleFile(file);
-    });
-
-    ['dragenter', 'dragover'].forEach((type) => {
-      dropzone.addEventListener(type, (event) => {
-        event.preventDefault();
-        dropzone.classList.add('hover');
-      });
-    });
-    ['dragleave', 'drop'].forEach((type) => {
-      dropzone.addEventListener(type, (event) => {
-        event.preventDefault();
-        dropzone.classList.remove('hover');
-      });
-    });
-    dropzone.addEventListener('drop', (event) => {
-      const [file] = event.dataTransfer.files;
-      if (!file) return;
-      fileInput.files = event.dataTransfer.files;
-      handleFile(file);
-    });
-
-    form.addEventListener('submit', () => {
-      submitBtn.disabled = true;
-      spinner.classList.remove('d-none');
-      submitLabel.textContent = '送信中...';
-    });
-  });
-</script>
+<script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
 {% endblock %}
