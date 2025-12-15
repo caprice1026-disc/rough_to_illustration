@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 
 <div class="row align-items-center g-4 mb-4">
-  <div class="col-lg-8">
+  <div class="col-lg-12">
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
       <span class="badge badge-soft">リアルタイムプレビュー</span>
       <span class="badge badge-soft">文字数カウンタ</span>
@@ -13,22 +13,8 @@
     <p class="subtle-text mb-3">色とポーズの指示を添えて、Gemini に高品質なイラスト化を依頼します。プレビューで確認しながら安心して送信できます。</p>
     <div class="d-flex flex-wrap gap-2">
       <div class="pill"><i class="bi bi-magic"></i> ブラシアップと欠損補完</div>
-      <div class="pill"><i class="bi bi-cloud-upload"></i> 画像はセッションだけに保存</div>
+      <div class="pill"><i class="bi bi-cloud-upload"></i> 画像はサーバー側に一時保存</div>
       <div class="pill"><i class="bi bi-lightning-charge"></i> プロンプト自動組み立て</div>
-    </div>
-  </div>
-  <div class="col-lg-4">
-    <div class="glass-card p-3 h-100">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div>
-          <div class="text-uppercase text-white-50 small">進行ステータス</div>
-          <div class="fw-bold">入力 → 生成 → ダウンロード</div>
-        </div>
-        <i class="bi bi-rocket-takeoff fs-3 text-info"></i>
-      </div>
-      <p class="subtle-text mb-1"><i class="bi bi-shield-check me-1"></i> ログインユーザーのみ利用可能</p>
-      <p class="subtle-text mb-2"><i class="bi bi-hdd-network me-1"></i> APIキーは環境変数から読み込み</p>
-      <div class="loading-bar"></div>
     </div>
   </div>
 </div>
@@ -157,7 +143,13 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h3 class="card-title mb-0">生成されたイラスト</h3>
-          <span class="option-chip"><i class="bi bi-download"></i> ステップ 2</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-soft" id="generationStatusBadge">{{ '完了' if image_data else '待機中' }}</span>
+            <span class="option-chip"><i class="bi bi-download"></i> ステップ 2</span>
+          </div>
+        </div>
+        <div class="small text-white-50 mb-3" id="generationStatusText">
+          {{ '生成が完了しました。' if image_data else 'ここに生成結果が表示されます。' }}
         </div>
         {% if image_data %}
         <div class="text-center">
@@ -168,20 +160,6 @@
         </div>
         {% else %}
         <p class="subtle-text mb-0">ラフ絵をアップロードして「イラスト生成」を押すと、ここにプレビューが表示されます。</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="card glass-card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h4 class="card-title mb-0">APIに送信したプロンプト</h4>
-          <span class="badge bg-primary-subtle text-light">読みやすい形で確認</span>
-        </div>
-        {% if prompt_text %}
-        <pre class="bg-dark text-white p-3 rounded" style="white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.08);">{{ prompt_text }}</pre>
-        {% else %}
-        <p class="subtle-text mb-0">入力内容に応じたプロンプトがここに表示されます。生成前のヒントとして「色味・質感・ポーズ」が反映されます。</p>
         {% endif %}
       </div>
     </div>

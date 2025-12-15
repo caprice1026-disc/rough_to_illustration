@@ -79,6 +79,8 @@ const initSubmitState = () => {
   const submitBtn = document.getElementById('generateButton');
   const spinner = document.getElementById('loadingSpinner');
   const submitLabel = document.getElementById('submitLabel');
+  const statusBadge = document.getElementById('generationStatusBadge');
+  const statusText = document.getElementById('generationStatusText');
 
   if (!form || !submitBtn || !spinner || !submitLabel) return;
 
@@ -86,6 +88,8 @@ const initSubmitState = () => {
     submitBtn.disabled = true;
     spinner.classList.remove('d-none');
     submitLabel.textContent = '送信中...';
+    if (statusBadge) statusBadge.textContent = '生成中';
+    if (statusText) statusText.textContent = '生成中です。しばらくお待ちください。';
   });
 };
 

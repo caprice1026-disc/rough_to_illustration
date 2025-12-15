@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import base64
-from io import BytesIO
 from typing import Optional
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
@@ -11,6 +9,9 @@ from extensions import db
 from models import IllustrationPreset
 from services.generation_service import (
     GenerationError,
+    extension_for_mime_type,
+    load_image_path_from_session,
+    load_mime_type_from_session,
     load_result_from_session,
     run_generation,
     save_result_to_session,
@@ -23,13 +24,13 @@ ASPECT_RATIO_OPTIONS = ["auto", "1:1", "4:5", "16:9"]
 RESOLUTION_OPTIONS = ["auto", "1K", "2K", "4K"]
 
 
-def _restore_result() -> tuple[Optional[str], Optional[str]]:
+def _restore_result() -> Optional[str]:
     """セッションに保存された結果から表示用データを復元する。"""
 
     existing = load_result_from_session()
     if not existing:
-        return None, None
-    return existing.image_data_uri, existing.prompt_text
+        return None
+    return existing.image_data_uri
 
 
 def _fetch_presets() -> list[IllustrationPreset]:
@@ -49,7 +50,6 @@ def _fetch_presets() -> list[IllustrationPreset]:
 @login_required
 def index():
     image_data: Optional[str] = None
-    prompt_text: Optional[str] = None
 
     if request.method == "POST":
         file = request.files.get("rough_image")
@@ -73,11 +73,10 @@ def index():
         else:
             save_result_to_session(result)
             image_data = result.image_data_uri
-            prompt_text = result.prompt_text
             flash("イラストの生成が完了しました。", "success")
 
     if not image_data:
-        image_data, prompt_text = _restore_result()
+        image_data = _restore_result()
 
     user_presets = _fetch_presets()
     presets_payload = [
@@ -93,7 +92,6 @@ def index():
     return render_template(
         "index.html",
         image_data=image_data,
-        prompt_text=prompt_text,
         aspect_ratio_options=ASPECT_RATIO_OPTIONS,
         resolution_options=RESOLUTION_OPTIONS,
         user_presets=user_presets,
@@ -104,16 +102,16 @@ def index():
 @main_bp.route("/download")
 @login_required
 def download():
-    existing = load_result_from_session()
-    if not existing:
+    image_path = load_image_path_from_session()
+    if not image_path:
         abort(404)
 
-    raw_bytes = base64.b64decode(existing.encoded_image)
+    mime_type = load_mime_type_from_session()
     return send_file(
-        BytesIO(raw_bytes),
-        mimetype=existing.mime_type,
+        image_path,
+        mimetype=mime_type,
         as_attachment=True,
-        download_name="generated_image.png",
+        download_name=f"generated_image{extension_for_mime_type(mime_type)}",
     )
 
 
