@@ -26,17 +26,17 @@ MODE_REFERENCE_STYLE_COLORIZE = GenerationMode(
     description="完成済みイラストを参照して、ラフスケッチを同じ絵柄で仕上げます。",
 )
 
-MODE_CHAT_EDIT = GenerationMode(
-    id="chat_edit",
-    label="チャット編集（準備中）",
-    description="チャットで対話しながら画像を編集します。（後日実装）",
-    enabled=False,
+MODE_INPAINT_OUTPAINT = GenerationMode(
+    id="inpaint_outpaint",
+    label="インペイント/アウトペイント編集",
+    description="マスクで指定した領域だけを編集し、構図や色味は基本維持します。",
+    enabled=True,
 )
 
 ALL_MODES: list[GenerationMode] = [
     MODE_ROUGH_WITH_INSTRUCTIONS,
     MODE_REFERENCE_STYLE_COLORIZE,
-    MODE_CHAT_EDIT,
+    MODE_INPAINT_OUTPAINT,
 ]
 
 DEFAULT_MODE_ID: str = MODE_ROUGH_WITH_INSTRUCTIONS.id

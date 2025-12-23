@@ -11,8 +11,8 @@ from flask import current_app, session
 from PIL import Image
 from werkzeug.datastructures import FileStorage
 
-from illust import generate_image, generate_image_with_contents
-from services.prompt_builder import build_prompt, build_reference_style_colorize_prompt
+from illust import generate_image, generate_image_with_contents, edit_image_with_mask
+from services.prompt_builder import build_prompt, build_reference_style_colorize_prompt, build_edit_prompt
 
 
 def extension_for_mime_type(mime_type: str) -> str:
@@ -209,3 +209,121 @@ def load_image_path_from_session() -> Optional[Path]:
 
 def load_mime_type_from_session() -> str:
     return session.get("generated_mime", "image/png")
+
+
+
+def decode_uploaded_image_raw(file: Optional[FileStorage], *, label: str = "画像") -> Image.Image:
+    """アップロードされた画像ファイルを変換せずに PIL Image として読み込む。"""
+
+    if file is None or file.filename == "":
+        raise GenerationError(f"{label}を選択してください。")
+
+    try:
+        raw_bytes = file.read()
+        image = Image.open(BytesIO(raw_bytes))
+    except Exception as exc:  # noqa: BLE001
+        current_app.logger.exception("Failed to decode uploaded image (%s): %s", label, exc)
+        raise GenerationError("画像の読み込みに失敗しました。PNG/JPG/JPEG を確認してください。") from exc
+
+    return image
+
+
+def decode_data_url_image(data_url: str, *, label: str = "画像") -> Image.Image:
+    """Data URL 形式の画像を PIL Image として読み込む。"""
+
+    if not data_url:
+        raise GenerationError(f"{label}が見つかりません。")
+
+    if "," not in data_url:
+        raise GenerationError(f"{label}の形式が不正です。")
+
+    _, encoded = data_url.split(",", 1)
+    try:
+        raw_bytes = base64.b64decode(encoded)
+        image = Image.open(BytesIO(raw_bytes))
+    except Exception as exc:  # noqa: BLE001
+        current_app.logger.exception("Failed to decode data URL image (%s): %s", label, exc)
+        raise GenerationError("画像の読み込みに失敗しました。") from exc
+
+    return image
+
+
+def extract_mask_from_alpha(image: Image.Image) -> Optional[Image.Image]:
+    """アルファチャンネルがあればマスクとして抽出する。"""
+
+    if "A" not in image.getbands():
+        return None
+    return image.getchannel("A")
+
+
+def normalize_mask_image(mask_image: Image.Image) -> Image.Image:
+    """マスク画像をグレースケールに正規化する。"""
+
+    return mask_image.convert("L")
+
+
+def ensure_rgb(image: Image.Image) -> Image.Image:
+    """RGBA画像を白背景で合成してRGBに変換する。"""
+
+    if image.mode == "RGB":
+        return image
+    if image.mode in {"RGBA", "LA"}:
+        background = Image.new("RGB", image.size, (255, 255, 255))
+        background.paste(image, mask=image.getchannel("A"))
+        return background
+    return image.convert("RGB")
+
+
+def run_edit_generation(
+    *,
+    base_file: Optional[FileStorage],
+    mask_file: Optional[FileStorage],
+    base_data: Optional[str],
+    mask_data: Optional[str],
+    edit_mode: str,
+    edit_instruction: str,
+) -> GenerationResult:
+    """編集モード用の画像生成を行う。"""
+
+    if base_data:
+        base_image = decode_data_url_image(base_data, label="編集元画像")
+    else:
+        base_image = decode_uploaded_image_raw(base_file, label="編集元画像")
+
+    mask_image: Optional[Image.Image] = None
+    if mask_data:
+        mask_image = decode_data_url_image(mask_data, label="マスク画像")
+    elif mask_file and mask_file.filename:
+        mask_image = decode_uploaded_image_raw(mask_file, label="マスク画像")
+    else:
+        mask_image = extract_mask_from_alpha(base_image)
+
+    if mask_image is None:
+        raise GenerationError("マスク画像を用意してください。エディタで描画するか、マスク画像をアップロードしてください。")
+
+    base_image = ensure_rgb(base_image)
+    mask_image = normalize_mask_image(mask_image)
+
+    if base_image.size != mask_image.size:
+        raise GenerationError("マスク画像のサイズがベース画像と一致しません。")
+
+    normalized_mode = "outpaint" if edit_mode == "outpaint" else "inpaint"
+    prompt = build_edit_prompt(edit_instruction, normalized_mode)
+
+    generated = edit_image_with_mask(
+        prompt=prompt,
+        base_image=base_image,
+        mask_image=mask_image,
+        edit_mode=normalized_mode,
+    )
+
+    image_id = _persist_generated_image(
+        raw_bytes=generated.raw_bytes,
+        mime_type=generated.mime_type,
+    )
+    encoded = base64.b64encode(generated.raw_bytes).decode("utf-8")
+    return GenerationResult(
+        image_data_uri=f"data:{generated.mime_type};base64,{encoded}",
+        mime_type=generated.mime_type,
+        image_id=image_id,
+    )

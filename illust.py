@@ -222,3 +222,89 @@ def generate_image_with_images(
         aspect_ratio=aspect_ratio,
         resolution=resolution,
     )
+
+
+
+def _pil_to_types_image(image: Image.Image, *, mime_type: str = "image/png") -> types.Image:
+    buffer = BytesIO()
+    format_map = {
+        "image/png": "PNG",
+        "image/jpeg": "JPEG",
+        "image/jpg": "JPEG",
+    }
+    image.save(buffer, format=format_map.get(mime_type, "PNG"))
+    return types.Image(image_bytes=buffer.getvalue(), mime_type=mime_type)
+
+
+def edit_image_with_mask(
+    *,
+    prompt: str,
+    base_image: Image.Image,
+    mask_image: Image.Image,
+    edit_mode: str,
+    aspect_ratio: Optional[str] = None,
+) -> GeneratedImage:
+    """
+    マスク画像を用いてインペイント/アウトペイントを行う。
+
+    Args:
+        prompt: 編集指示テキスト。
+        base_image: ベース画像。
+        mask_image: マスク画像（非ゼロが編集対象）。
+        edit_mode: "inpaint" または "outpaint"。
+        aspect_ratio: 出力のアスペクト比（指定がある場合のみ）。
+    """
+
+    if edit_mode == "outpaint":
+        edit_mode_value = types.EditMode.EDIT_MODE_OUTPAINT
+    else:
+        edit_mode_value = types.EditMode.EDIT_MODE_INPAINT_INSERTION
+
+    raw_ref = types.RawReferenceImage(
+        reference_id=1,
+        reference_image=_pil_to_types_image(base_image),
+    )
+    mask_ref = types.MaskReferenceImage(
+        reference_id=2,
+        reference_image=_pil_to_types_image(mask_image),
+        config=types.MaskReferenceConfig(mask_mode="MASK_MODE_USER_PROVIDED"),
+    )
+
+    config_kwargs: dict[str, Any] = {
+        "edit_mode": edit_mode_value,
+        "number_of_images": 1,
+        "output_mime_type": "image/png",
+    }
+    if aspect_ratio:
+        config_kwargs["aspect_ratio"] = aspect_ratio
+
+    response = _client().models.edit_image(
+        model=DEFAULT_IMAGE_MODEL,
+        prompt=prompt,
+        reference_images=[raw_ref, mask_ref],
+        config=types.EditImageConfig(**config_kwargs),
+    )
+
+    if not response or not response.generated_images:
+        raise RuntimeError("APIレスポンスに画像データが含まれていません。")
+
+    chosen = None
+    for generated in response.generated_images:
+        if generated.image and generated.image.image_bytes:
+            chosen = generated
+            break
+
+    if not chosen or not chosen.image or not chosen.image.image_bytes:
+        raise RuntimeError("APIレスポンスに画像データが含まれていません。")
+
+    image_bytes = chosen.image.image_bytes
+    mime_type = chosen.image.mime_type or "image/png"
+    generated_image = Image.open(BytesIO(image_bytes))
+    generated_image.load()
+
+    return GeneratedImage(
+        image=generated_image,
+        raw_bytes=image_bytes,
+        mime_type=mime_type,
+        prompt=prompt,
+    )

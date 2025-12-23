@@ -115,3 +115,46 @@
 .mode-pills .nav-link.disabled {
   opacity: 0.45;
 }
+
+
+.edit-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.editor-canvas-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 15, 26, 0.6);
+}
+
+.editor-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.editor-canvas.editor-mask {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+}
+
+.editor-tools {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.btn-group .btn.active {
+  background: rgba(31, 209, 249, 0.14);
+  border-color: rgba(31, 209, 249, 0.35);
+  color: #b8ecff;
+}

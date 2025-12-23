@@ -43,3 +43,27 @@ def build_reference_style_colorize_prompt() -> str:
     """完成絵(参照)＋ラフ(対象)の2枚入力モード用の固定プロンプト。"""
 
     return REFERENCE_STYLE_COLORIZE_PROMPT.strip()
+
+
+
+def build_edit_prompt(user_instruction: str, edit_mode: str) -> str:
+    """インペイント/アウトペイント用の編集プロンプトを構築する。"""
+
+    base_lines = [
+        "You are editing the provided image using a mask.",
+        "Only modify the masked areas. Everything outside the mask must remain unchanged.",
+        "Preserve the original composition, colors, lighting, and art style unless the user explicitly asks otherwise.",
+        "Do not add logos, text, or extra props unless explicitly requested.",
+    ]
+    if edit_mode == "outpaint":
+        base_lines.append(
+            "Outpaint seamlessly beyond the original canvas so the transition feels natural."
+        )
+
+    instruction = user_instruction.strip()
+    if instruction:
+        base_lines.append(f"User instruction: {instruction}")
+    else:
+        base_lines.append("User instruction: No additional instructions were provided.")
+
+    return " ".join(base_lines)

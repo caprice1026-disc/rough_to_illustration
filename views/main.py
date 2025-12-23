@@ -16,9 +16,10 @@ from services.generation_service import (
     load_result_from_session,
     run_generation,
     run_generation_with_reference,
+    run_edit_generation,
     save_result_to_session,
 )
-from services.modes import ALL_MODES, MODE_REFERENCE_STYLE_COLORIZE, normalize_mode_id
+from services.modes import ALL_MODES, MODE_REFERENCE_STYLE_COLORIZE, MODE_INPAINT_OUTPAINT, normalize_mode_id
 
 
 main_bp = Blueprint("main", __name__)
@@ -68,6 +69,21 @@ def index():
                     rough_file=rough_file,
                     aspect_ratio_label=aspect_ratio_label,
                     resolution_label=resolution_label,
+                )
+            elif current_mode == MODE_INPAINT_OUTPAINT.id:
+                base_file = request.files.get("edit_base_image")
+                mask_file = request.files.get("edit_mask_image")
+                base_data = request.form.get("edit_base_data", "")
+                mask_data = request.form.get("edit_mask_data", "")
+                edit_mode = request.form.get("edit_mode", "inpaint")
+                edit_instruction = request.form.get("edit_instruction", "")
+                result = run_edit_generation(
+                    base_file=base_file,
+                    mask_file=mask_file,
+                    base_data=base_data,
+                    mask_data=mask_data,
+                    edit_mode=edit_mode,
+                    edit_instruction=edit_instruction,
                 )
             else:
                 file = request.files.get("rough_image")
