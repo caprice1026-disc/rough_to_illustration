@@ -20,7 +20,12 @@ def _get_next_url() -> Optional[str]:
 
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
-    if current_user.is_authenticated:
+    if not current_user.is_authenticated:
+        flash("新規登録はイニシャルユーザーでログインした場合のみ利用できます。", "error")
+        return redirect(url_for("auth.login"))
+
+    if not current_user.is_initial_user:
+        flash("新規登録はイニシャルユーザーのみ利用できます。", "error")
         return redirect(url_for("main.index"))
 
     if request.method == "POST":
@@ -40,7 +45,6 @@ def signup():
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
-        login_user(user)
         flash("ユーザー登録が完了しました。", "success")
         return redirect(url_for("main.index"))
 

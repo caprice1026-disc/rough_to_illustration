@@ -9,6 +9,7 @@
             <div class="badge badge-soft mb-2">サインイン</div>
             <h2 class="card-title mb-1">ようこそ、おかえりなさい</h2>
             <p class="subtle-text mb-0">登録済みのユーザー名とパスワードでログインしてください。</p>
+            <p class="subtle-text mb-0">新規登録はイニシャルユーザーがログインした状態でのみ実行できます。</p>
           </div>
           <i class="bi bi-door-open fs-2 text-info"></i>
         </div>
@@ -29,7 +30,6 @@
           </div>
           <div class="d-grid gap-2 d-md-flex justify-content-md-between align-items-center">
             <button class="btn btn-primary px-4" type="submit">ログイン</button>
-            <a class="text-decoration-none subtle-text" href="{{ url_for('auth.signup') }}">新規登録はこちら</a>
           </div>
         </form>
       </div>

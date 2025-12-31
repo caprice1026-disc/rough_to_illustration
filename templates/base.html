@@ -18,10 +18,12 @@
         <div class="d-flex align-items-center gap-2 ms-auto">
           {% if current_user.is_authenticated %}
           <span class="badge rounded-pill bg-light text-dark me-1"><i class="bi bi-person"></i> {{ current_user.username }} さん</span>
+          {% if current_user.is_initial_user %}
+          <a class="btn btn-primary me-2" href="{{ url_for('auth.signup') }}">新規登録</a>
+          {% endif %}
           <a class="btn btn-outline-light" href="{{ url_for('auth.logout') }}">ログアウト</a>
           {% else %}
           <a class="btn btn-outline-light me-2" href="{{ url_for('auth.login') }}">ログイン</a>
-          <a class="btn btn-primary" href="{{ url_for('auth.signup') }}">新規登録</a>
           {% endif %}
         </div>
       </div>

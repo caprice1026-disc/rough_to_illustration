@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -31,6 +32,16 @@ class User(db.Model, UserMixin):
         """入力パスワードと保存済みハッシュを照合する。"""
 
         return check_password_hash(self.password_hash, raw_password)
+
+    @property
+    def is_initial_user(self) -> bool:
+        """イニシャルユーザーかどうかを判定する。"""
+
+        username = current_app.config.get("INITIAL_USER_USERNAME")
+        email = current_app.config.get("INITIAL_USER_EMAIL")
+        if not username or not email:
+            return False
+        return self.username == username and self.email == email
 
 
 class IllustrationPreset(db.Model):

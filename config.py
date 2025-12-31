@@ -16,3 +16,6 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", str(128 * 1024 * 1024)))
     MAX_FORM_MEMORY_SIZE = int(os.environ.get("MAX_FORM_MEMORY_SIZE", str(128 * 1024 * 1024)))
+    INITIAL_USER_USERNAME = os.environ.get("INITIAL_USER_USERNAME")
+    INITIAL_USER_EMAIL = os.environ.get("INITIAL_USER_EMAIL")
+    INITIAL_USER_PASSWORD = os.environ.get("INITIAL_USER_PASSWORD")
