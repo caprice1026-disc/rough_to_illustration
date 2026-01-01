@@ -103,7 +103,177 @@
           </form>
         </div>
 
-        <form id="generateForm" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3">
+        <div class="chat-panel d-none" data-mode-visible="chat_gui">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h5 class="mb-1">チャット</h5>
+              <small class="text-white-50">テキストと画像で会話しながら生成・編集できます。</small>
+            </div>
+            <form method="post" class="ms-auto">
+              <input type="hidden" name="mode" value="{{ current_mode }}">
+              <input type="hidden" name="chat_action" value="clear">
+              <button class="btn btn-outline-light btn-sm" type="submit"><i class="bi bi-trash3 me-1"></i> 履歴クリア</button>
+            </form>
+          </div>
+
+          <div class="chat-history mt-3" id="chatHistory">
+            {% if chat_history %}
+              {% for message in chat_history %}
+              <div class="chat-message {% if message.role == 'user' %}chat-user{% else %}chat-assistant{% endif %}">
+                <div class="chat-message-header">
+                  <span class="chat-role">{{ 'あなた' if message.role == 'user' else 'アシスタント' }}</span>
+                </div>
+                {% if message.text %}
+                <div class="chat-message-text">{{ message.text | replace('\n', '<br>') | safe }}</div>
+                {% endif %}
+                {% if message.images %}
+                <div class="chat-message-images">
+                  {% for image in message.images %}
+                  <figure class="chat-image">
+                    <img src="{{ image.data_uri }}" alt="{{ image.label or 'チャット画像' }}">
+                    {% if image.label %}
+                    <figcaption>{{ image.label }}</figcaption>
+                    {% endif %}
+                  </figure>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="text-white-50 small">まだ会話がありません。テキストや画像を送信すると履歴が表示されます。</div>
+            {% endif %}
+          </div>
+
+          <form id="chatForm" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3 mt-3">
+            <input type="hidden" name="mode" value="{{ current_mode }}">
+            <input type="hidden" name="chat_action" id="chatActionInput" value="text">
+            <input type="hidden" name="chat_mode" id="chatModeInput" value="rough_with_instructions">
+
+            <div class="chat-menu d-flex flex-wrap align-items-center gap-2">
+              <div class="dropdown">
+                <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-chat-dots me-1"></i> メニュー
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                  <li><button class="dropdown-item" type="button" data-chat-action="text">テキストチャット</button></li>
+                  <li><button class="dropdown-item" type="button" data-chat-action="rough_with_instructions">ラフ→仕上げ（色・ポーズ指示）</button></li>
+                  <li><button class="dropdown-item" type="button" data-chat-action="reference_style_colorize">完成絵参照→ラフ着色</button></li>
+                  <li><button class="dropdown-item" type="button" data-chat-action="inpaint_outpaint">インペイント/アウトペイント編集</button></li>
+                </ul>
+              </div>
+              <span class="badge badge-soft" id="chatMenuLabel">テキストチャット</span>
+              <span class="text-white-50 small">メニューから実行モードを切り替えられます。</span>
+            </div>
+
+            <div class="chat-action-panel" data-chat-panel="text">
+              <label class="form-label" for="chat_message">メッセージ</label>
+              <textarea class="form-control" id="chat_message" name="chat_message" rows="3" maxlength="1200" placeholder="例: 背景の雰囲気をもう少し柔らかくしたいです。"></textarea>
+              <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                <label class="btn btn-outline-light btn-sm" for="chat_image"><i class="bi bi-image me-1"></i> 画像を添付</label>
+                <input class="visually-hidden" type="file" id="chat_image" name="chat_image" accept="image/png, image/jpeg">
+                <small class="text-white-50">画像とテキストを同時に送れます。</small>
+              </div>
+            </div>
+
+            <div class="chat-action-panel d-none" data-chat-panel="rough_with_instructions">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_rough_image">ラフスケッチ</label>
+                  <input class="form-control" type="file" id="chat_rough_image" name="chat_rough_image" accept="image/png, image/jpeg">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_color_instruction">着色イメージ</label>
+                  <textarea class="form-control" id="chat_color_instruction" name="chat_color_instruction" rows="2" maxlength="1000"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_pose_instruction">ポーズの指示</label>
+                  <textarea class="form-control" id="chat_pose_instruction" name="chat_pose_instruction" rows="2" maxlength="1000"></textarea>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="chat_aspect_ratio">アスペクト比</label>
+                  <select class="form-select" id="chat_aspect_ratio" name="chat_aspect_ratio">
+                    {% for label in aspect_ratio_options %}
+                    <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="chat_resolution">解像度</label>
+                  <select class="form-select" id="chat_resolution" name="chat_resolution">
+                    {% for label in resolution_options %}
+                    <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-action-panel d-none" data-chat-panel="reference_style_colorize">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_reference_image">参考（完成）画像</label>
+                  <input class="form-control" type="file" id="chat_reference_image" name="chat_reference_image" accept="image/png, image/jpeg">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_reference_rough_image">ラフスケッチ</label>
+                  <input class="form-control" type="file" id="chat_reference_rough_image" name="chat_rough_image" accept="image/png, image/jpeg">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="chat_reference_aspect_ratio">アスペクト比</label>
+                  <select class="form-select" id="chat_reference_aspect_ratio" name="chat_aspect_ratio">
+                    {% for label in aspect_ratio_options %}
+                    <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" for="chat_reference_resolution">解像度</label>
+                  <select class="form-select" id="chat_reference_resolution" name="chat_resolution">
+                    {% for label in resolution_options %}
+                    <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-action-panel d-none" data-chat-panel="inpaint_outpaint">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_edit_base_image">編集対象画像</label>
+                  <input class="form-control" type="file" id="chat_edit_base_image" name="chat_edit_base_image" accept="image/png, image/jpeg">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="chat_edit_mask_image">マスク画像</label>
+                  <input class="form-control" type="file" id="chat_edit_mask_image" name="chat_edit_mask_image" accept="image/png, image/jpeg">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="chat_edit_mode">編集モード</label>
+                  <select class="form-select" id="chat_edit_mode" name="chat_edit_mode">
+                    <option value="inpaint">インペイント</option>
+                    <option value="outpaint">アウトペイント</option>
+                  </select>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label" for="chat_edit_instruction">追加指示</label>
+                  <textarea class="form-control" id="chat_edit_instruction" name="chat_edit_instruction" rows="2" maxlength="1000"></textarea>
+                </div>
+              </div>
+              <small class="text-white-50 d-block mt-2">マスク画像は編集したい領域が白、その他が黒の画像を用意してください。</small>
+            </div>
+
+            <div class="d-grid d-md-flex align-items-center gap-3">
+              <button class="btn btn-primary flex-grow-1" id="chatSubmitButton" type="submit">
+                <span class="spinner-border spinner-border-sm me-2 d-none" id="chatLoadingSpinner" aria-hidden="true"></span>
+                <span id="chatSubmitLabel">送信</span>
+              </button>
+              <div class="text-white-50 small"><i class="bi bi-lightbulb me-1"></i> 送信中はボタンが無効化されます。</div>
+            </div>
+          </form>
+        </div>
+
+        <form id="generateForm" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3" data-mode-visible="rough_with_instructions,reference_style_colorize,inpaint_outpaint">
           <input type="hidden" name="mode" id="generationModeInput" value="{{ current_mode }}">
 
           <div class="d-flex flex-column flex-md-row gap-3">
@@ -289,6 +459,9 @@
         </p>
         <p class="subtle-text mb-0 {% if current_mode != 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="inpaint_outpaint">
           編集対象画像をアップロードしてマスクを描き、「編集をリクエスト」を押すと、ここにプレビューが表示されます。
+        </p>
+        <p class="subtle-text mb-0 {% if current_mode != 'chat_gui' %}d-none{% endif %}" data-mode-visible="chat_gui">
+          チャットのやり取りで生成された画像はここに表示され、履歴にはテキストと画像が残ります。
         </p>
         {% endif %}
       </div>

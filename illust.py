@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEFAULT_IMAGE_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3-pro-image-preview")
+DEFAULT_TEXT_MODEL = os.environ.get("GEMINI_TEXT_MODEL", "gemini-2.0-flash")
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +223,46 @@ def generate_image_with_images(
         aspect_ratio=aspect_ratio,
         resolution=resolution,
     )
+
+
+def _extract_text_from_response(response: Any) -> str:
+    """Geminiレスポンスからテキストを抽出する。"""
+
+    text = getattr(response, "text", None)
+    if text:
+        return str(text).strip()
+
+    parts = getattr(response, "parts", None)
+    if not parts:
+        return ""
+
+    for part in parts:
+        part_text = getattr(part, "text", None)
+        if part_text:
+            return str(part_text).strip()
+
+    return ""
+
+
+def generate_chat_response(
+    *,
+    contents: list[object],
+    model: Optional[str] = None,
+) -> str:
+    """会話履歴を含むコンテンツからテキスト応答を生成する。"""
+
+    if not contents:
+        raise ValueError("contents must not be empty")
+
+    response = _client().models.generate_content(
+        model=model or DEFAULT_TEXT_MODEL,
+        contents=contents,
+        config=types.GenerateContentConfig(response_modalities=["TEXT"]),
+    )
+    text = _extract_text_from_response(response)
+    if not text:
+        raise RuntimeError("APIレスポンスにテキストが含まれていません。")
+    return text
 
 
 

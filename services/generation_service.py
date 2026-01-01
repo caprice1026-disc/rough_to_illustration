@@ -51,6 +51,40 @@ def _delete_generated_image(image_id: Optional[str]) -> None:
         return
 
 
+def persist_image_bytes(*, raw_bytes: bytes, mime_type: str) -> str:
+    """画像の生データを保存してIDを返す。"""
+
+    return _persist_generated_image(raw_bytes=raw_bytes, mime_type=mime_type)
+
+
+def load_image_path_from_storage(image_id: str) -> Optional[Path]:
+    """保存済み画像のパスを取得する。"""
+
+    if not image_id:
+        return None
+    path = _generated_image_path(image_id)
+    if not path.exists():
+        return None
+    return path
+
+
+def load_image_data_uri(image_id: str, mime_type: str) -> Optional[str]:
+    """保存済み画像をData URIに変換する。"""
+
+    path = load_image_path_from_storage(image_id)
+    if not path:
+        return None
+    encoded = base64.b64encode(path.read_bytes()).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded}"
+
+
+def build_data_url(*, raw_bytes: bytes, mime_type: str) -> str:
+    """バイト列をData URLへ変換する。"""
+
+    encoded = base64.b64encode(raw_bytes).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded}"
+
+
 @dataclass
 class GenerationResult:
     """生成結果をフロントエンドで扱いやすい形にまとめたデータクラス。"""
@@ -271,6 +305,7 @@ def run_edit_generation(
     base_file: Optional[FileStorage],
     base_data: Optional[str],
     mask_data: Optional[str],
+    mask_file: Optional[FileStorage],
     edit_mode: str,
     edit_instruction: str,
 ) -> GenerationResult:
@@ -281,9 +316,12 @@ def run_edit_generation(
     else:
         base_image = decode_uploaded_image_raw(base_file, label="編集元画像")
 
-    if not mask_data:
-        raise GenerationError("マスク画像を用意してください。エディタで描画して適用してください。")
-    mask_image = decode_data_url_image(mask_data, label="マスク画像")
+    if mask_data:
+        mask_image = decode_data_url_image(mask_data, label="マスク画像")
+    else:
+        if mask_file is None or mask_file.filename == "":
+            raise GenerationError("マスク画像を用意してください。エディタで描画して適用してください。")
+        mask_image = decode_uploaded_image_raw(mask_file, label="マスク画像")
 
     base_image = ensure_rgb(base_image)
     mask_image = normalize_mask_image(mask_image)

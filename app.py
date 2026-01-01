@@ -9,11 +9,13 @@ from views.auth import auth_bp
 from views.main import main_bp
 
 
-def create_app() -> Flask:
+def create_app(config_override: dict | None = None) -> Flask:
     """Flaskアプリケーションを生成し、Blueprintを登録する。"""
 
     app = Flask(__name__)
     app.config.from_object(Config)
+    if config_override:
+        app.config.update(config_override)
 
     db.init_app(app)
     login_manager.init_app(app)

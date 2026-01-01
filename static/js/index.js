@@ -249,6 +249,59 @@ const initSubmitState = () => {
   });
 };
 
+const CHAT_MENU_LABELS = {
+  text: 'テキストチャット',
+  rough_with_instructions: 'ラフ→仕上げ（色・ポーズ指示）',
+  reference_style_colorize: '完成絵参照→ラフ着色',
+  inpaint_outpaint: 'インペイント/アウトペイント編集',
+};
+
+const initChatMenu = () => {
+  const actionInput = document.getElementById('chatActionInput');
+  const modeInput = document.getElementById('chatModeInput');
+  const menuLabel = document.getElementById('chatMenuLabel');
+  const panels = document.querySelectorAll('[data-chat-panel]');
+  const menuItems = document.querySelectorAll('[data-chat-action]');
+
+  if (!actionInput || !modeInput || !menuLabel || panels.length === 0 || menuItems.length === 0) return;
+
+  const applyChatAction = (action) => {
+    const isText = action === 'text';
+    actionInput.value = isText ? 'text' : 'generate';
+    modeInput.value = isText ? 'rough_with_instructions' : action;
+    menuLabel.textContent = CHAT_MENU_LABELS[action] || CHAT_MENU_LABELS.text;
+
+    panels.forEach((panel) => {
+      panel.classList.toggle('d-none', panel.dataset.chatPanel !== action);
+    });
+  };
+
+  menuItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      const action = item.dataset.chatAction;
+      if (!action) return;
+      applyChatAction(action);
+    });
+  });
+
+  applyChatAction('text');
+};
+
+const initChatSubmitState = () => {
+  const form = document.getElementById('chatForm');
+  const submitBtn = document.getElementById('chatSubmitButton');
+  const spinner = document.getElementById('chatLoadingSpinner');
+  const submitLabel = document.getElementById('chatSubmitLabel');
+
+  if (!form || !submitBtn || !spinner || !submitLabel) return;
+
+  form.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    spinner.classList.remove('d-none');
+    submitLabel.textContent = '送信中...';
+  });
+};
+
 const initPresets = () => {
   const panel = document.getElementById('presetPanel');
   const presetSelect = document.getElementById('presetSelect');
@@ -516,6 +569,8 @@ const bootstrapIndexPage = () => {
   initSubmitState();
   initPresets();
   initMaskEditor();
+  initChatMenu();
+  initChatSubmitState();
 };
 
 document.addEventListener('DOMContentLoaded', bootstrapIndexPage);
