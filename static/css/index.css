@@ -7,9 +7,54 @@
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
+.upload-dropzone.is-ready {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.upload-dropzone.has-file {
+  border-color: rgba(115, 217, 132, 0.8);
+  background: rgba(74, 197, 98, 0.12);
+}
+
+.upload-dropzone.has-error {
+  border-color: rgba(255, 99, 99, 0.9);
+  background: rgba(255, 70, 70, 0.12);
+}
+
 .upload-dropzone.hover {
   border-color: var(--accent);
   background: rgba(31, 209, 249, 0.08);
+}
+
+.upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(12, 15, 26, 0.35);
+  color: rgba(219, 229, 255, 0.9);
+}
+
+.upload-status-icon {
+  font-size: 0.7rem;
+}
+
+.upload-dropzone.is-ready .upload-status-icon {
+  color: rgba(219, 229, 255, 0.7);
+}
+
+.upload-dropzone.has-file .upload-status-icon {
+  color: #57d17a;
+}
+
+.upload-dropzone.has-error .upload-status-icon {
+  color: #ff6b6b;
+}
+
+.upload-help {
+  line-height: 1.4;
 }
 
 .preview-image {
