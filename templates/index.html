@@ -46,217 +46,251 @@
           <span class="option-chip"><i class="bi bi-pencil-square"></i> ファイル/指示入力</span>
         </div>
 
-        <div class="mode-switch mb-3">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <h5 class="mb-0">モード</h5>
-              <small class="text-white-50" id="modeDescription">
-                {% for mode in modes %}
-                {% if mode.id == current_mode %}
-                {{ mode.description }}
-                {% endif %}
-                {% endfor %}
-              </small>
-            </div>
-          </div>
-          <div class="nav nav-pills mode-pills" id="modePills" role="tablist" aria-label="生成モード">
-            {% for mode in modes %}
-            <button
-              type="button"
-              class="nav-link {% if mode.id == current_mode %}active{% endif %} {% if not mode.enabled %}disabled{% endif %}"
-              data-mode="{{ mode.id }}"
-              data-mode-description="{{ mode.description }}"
-              {% if not mode.enabled %}disabled aria-disabled="true"{% endif %}
-            >
-              {{ mode.label }}
-            </button>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div
-          class="preset-panel mb-3 {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}"
-          id="presetPanel"
-          data-mode-visible="rough_with_instructions"
-          data-presets='{{ presets_payload | tojson }}'
-        >
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <h5 class="mb-0">マイプリセット</h5>
-              <small class="text-white-50">色とポーズの組み合わせを保存して再利用できます。</small>
-            </div>
-            <span class="badge preset-badge"><i class="bi bi-collection me-1"></i> {{ user_presets|length }} 件</span>
-          </div>
-          <div class="row g-2 align-items-end mb-2">
-            <div class="col-md-8">
-              <label class="form-label" for="presetSelect">保存済みプリセット</label>
-              <select class="form-select" id="presetSelect" name="preset_id">
-                <option value="">プリセットを選択</option>
-                {% for preset in user_presets %}
-                <option value="{{ preset.id }}">{{ preset.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-4 preset-actions d-grid d-md-flex gap-2">
-              <button class="btn btn-outline-light flex-grow-1" type="button" id="applyPreset"><i class="bi bi-arrow-down-circle me-1"></i> 読込</button>
-              <form method="post" action="{{ url_for('main.delete_preset') }}" class="flex-grow-1" id="deletePresetForm">
-                <input type="hidden" name="preset_id" id="deletePresetId">
-                <input type="hidden" name="mode" value="{{ current_mode }}">
-                <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash3 me-1"></i> 削除</button>
-              </form>
-            </div>
-          </div>
-          <form class="row gy-2 gx-3 align-items-end" method="post" action="{{ url_for('main.create_preset') }}" id="presetCreateForm">
-            <input type="hidden" name="mode" value="{{ current_mode }}">
-            <div class="col-md-4">
-              <label class="form-label" for="preset_name">プリセット名</label>
-              <input class="form-control" type="text" id="preset_name" name="preset_name" maxlength="80" placeholder="例: 夕焼け元気">
-            </div>
-            <div class="col-md-8 text-md-end">
-              <input type="hidden" name="preset_color" id="preset_color_value">
-              <input type="hidden" name="preset_pose" id="preset_pose_value">
-              <small class="text-white-50 d-block">下の色・ポーズ欄の現在の入力を保存します。</small>
-              <button class="btn btn-primary mt-2" type="submit"><i class="bi bi-bookmark-plus me-1"></i> プリセット保存</button>
-            </div>
-          </form>
-        </div>
+        <form method="post" action="{{ url_for('main.delete_preset') }}" id="deletePresetForm"></form>
+        <form method="post" action="{{ url_for('main.create_preset') }}" id="presetCreateForm"></form>
 
         <form id="generateForm" method="post" enctype="multipart/form-data" class="d-flex flex-column gap-3">
           <input type="hidden" name="mode" id="generationModeInput" value="{{ current_mode }}">
 
-          <div class="d-flex flex-column flex-md-row gap-3">
-            <div
-              class="flex-fill {% if current_mode != 'reference_style_colorize' %}d-none{% endif %}"
-              data-mode-visible="reference_style_colorize"
-            >
+          <div class="section-card">
+            <div class="section-header">
+              <h5 class="section-title mb-1">モード選択</h5>
+              <p class="section-description mb-0">用途に合わせて生成方法を選択します。モードによって必要な入力が切り替わります。</p>
+            </div>
+            <div class="mode-switch mb-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label mb-0" for="reference_image">参考（完成）画像（PNG/JPG/JPEG）</label>
-              </div>
-              <div id="referenceDropzone" class="upload-dropzone">
-                <div id="referencePlaceholder" class="subtle-text mb-2">参考画像をドラッグ＆ドロップ、または下のボタンから選択</div>
-                <img id="referencePreviewImage" class="preview-image d-none mb-2" alt="参考画像プレビュー">
-                <div id="referenceFileMeta" class="small text-white-50 mb-2"></div>
-                <div class="d-flex justify-content-center gap-2">
-                  <label class="btn btn-outline-light btn-sm" for="reference_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
-                  <button class="btn btn-outline-light btn-sm" type="button" id="referenceClearImage" aria-label="参考画像をクリア"><i class="bi bi-x-lg"></i></button>
+                <div>
+                  <h5 class="mb-0">モード</h5>
+                  <small class="text-white-50" id="modeDescription">
+                    {% for mode in modes %}
+                    {% if mode.id == current_mode %}
+                    {{ mode.description }}
+                    {% endif %}
+                    {% endfor %}
+                  </small>
                 </div>
               </div>
-              <input class="visually-hidden" type="file" id="reference_image" name="reference_image" accept="image/png, image/jpeg">
+              <div class="nav nav-pills mode-pills" id="modePills" role="tablist" aria-label="生成モード">
+                {% for mode in modes %}
+                <button
+                  type="button"
+                  class="nav-link {% if mode.id == current_mode %}active{% endif %} {% if not mode.enabled %}disabled{% endif %}"
+                  data-mode="{{ mode.id }}"
+                  data-mode-description="{{ mode.description }}"
+                  {% if not mode.enabled %}disabled aria-disabled="true"{% endif %}
+                >
+                  {{ mode.label }}
+                </button>
+                {% endfor %}
+              </div>
             </div>
 
-            <div class="flex-fill {% if current_mode == 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="rough_with_instructions,reference_style_colorize">
+            <div
+              class="preset-panel {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}"
+              id="presetPanel"
+              data-mode-visible="rough_with_instructions"
+              data-presets='{{ presets_payload | tojson }}'
+            >
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label mb-0" for="rough_image">ラフスケッチ（PNG/JPG/JPEG）</label>
+                <div>
+                  <h5 class="mb-0">マイプリセット</h5>
+                  <small class="text-white-50">色とポーズの組み合わせを保存して再利用できます。</small>
+                </div>
+                <span class="badge preset-badge"><i class="bi bi-collection me-1"></i> {{ user_presets|length }} 件</span>
               </div>
-              <div id="roughDropzone" class="upload-dropzone">
-                <div id="roughPlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
-                <img id="roughPreviewImage" class="preview-image d-none mb-2" alt="ラフ画像プレビュー">
-                <div id="roughFileMeta" class="small text-white-50 mb-2"></div>
-                <div class="d-flex justify-content-center gap-2">
-                  <label class="btn btn-outline-light btn-sm" for="rough_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
-                  <button class="btn btn-outline-light btn-sm" type="button" id="roughClearImage" aria-label="ラフ画像をクリア"><i class="bi bi-x-lg"></i></button>
+              <div class="row g-2 align-items-end mb-2">
+                <div class="col-md-8">
+                  <label class="form-label" for="presetSelect">保存済みプリセット</label>
+                  <select class="form-select" id="presetSelect">
+                    <option value="">プリセットを選択</option>
+                    {% for preset in user_presets %}
+                    <option value="{{ preset.id }}">{{ preset.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4 preset-actions d-grid d-md-flex gap-2">
+                  <button class="btn btn-outline-light flex-grow-1" type="button" id="applyPreset"><i class="bi bi-arrow-down-circle me-1"></i> 読込</button>
+                  <div class="flex-grow-1">
+                    <input type="hidden" name="preset_id" id="deletePresetId" form="deletePresetForm">
+                    <input type="hidden" name="mode" value="{{ current_mode }}" form="deletePresetForm">
+                    <button class="btn btn-outline-danger w-100" type="submit" form="deletePresetForm"><i class="bi bi-trash3 me-1"></i> 削除</button>
+                  </div>
                 </div>
               </div>
-              <input class="visually-hidden" type="file" id="rough_image" name="rough_image" accept="image/png, image/jpeg">
+              <div class="row gy-2 gx-3 align-items-end">
+                <input type="hidden" name="mode" value="{{ current_mode }}" form="presetCreateForm">
+                <div class="col-md-4">
+                  <label class="form-label" for="preset_name">プリセット名</label>
+                  <input class="form-control" type="text" id="preset_name" name="preset_name" maxlength="80" placeholder="例: 夕焼け元気" form="presetCreateForm">
+                </div>
+                <div class="col-md-8 text-md-end">
+                  <input type="hidden" name="preset_color" id="preset_color_value" form="presetCreateForm">
+                  <input type="hidden" name="preset_pose" id="preset_pose_value" form="presetCreateForm">
+                  <small class="text-white-50 d-block">下の色・ポーズ欄の現在の入力を保存します。</small>
+                  <button class="btn btn-primary mt-2" type="submit" form="presetCreateForm"><i class="bi bi-bookmark-plus me-1"></i> プリセット保存</button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="edit-panel d-none" data-mode-visible="inpaint_outpaint">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <div>
-                <h5 class="mb-1">編集用画像</h5>
-                <small class="text-white-50">マスクはエディタで描画して適用します。</small>
-              </div>
-              <button class="btn btn-outline-light btn-sm" type="button" id="openMaskEditorButton"><i class="bi bi-brush me-1"></i> エディタを開く</button>
+          <div class="section-card">
+            <div class="section-header">
+              <h5 class="section-title mb-1">画像アップロード</h5>
+              <p class="section-description mb-0">モードに応じて必要な画像を追加します。ドラッグ＆ドロップに対応しています。</p>
             </div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label mb-0" for="edit_base_image">編集対象画像（PNG/JPG/JPEG）</label>
-                <div id="editBaseDropzone" class="upload-dropzone mt-2">
-                  <div id="editBasePlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
-                  <img id="editBasePreviewImage" class="preview-image d-none mb-2" alt="編集対象画像プレビュー">
-                  <div id="editBaseFileMeta" class="small text-white-50 mb-2"></div>
+            <div class="d-flex flex-column flex-md-row gap-3">
+              <div
+                class="flex-fill {% if current_mode != 'reference_style_colorize' %}d-none{% endif %}"
+                data-mode-visible="reference_style_colorize"
+              >
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label mb-0" for="reference_image">参考（完成）画像（PNG/JPG/JPEG）</label>
+                </div>
+                <div id="referenceDropzone" class="upload-dropzone">
+                  <div id="referencePlaceholder" class="subtle-text mb-2">参考画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+                  <img id="referencePreviewImage" class="preview-image d-none mb-2" alt="参考画像プレビュー">
+                  <div id="referenceFileMeta" class="small text-white-50 mb-2"></div>
                   <div class="d-flex justify-content-center gap-2">
-                    <label class="btn btn-outline-light btn-sm" for="edit_base_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
-                    <button class="btn btn-outline-light btn-sm" type="button" id="editBaseClearImage" aria-label="編集対象画像をクリア"><i class="bi bi-x-lg"></i></button>
+                    <label class="btn btn-outline-light btn-sm" for="reference_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
+                    <button class="btn btn-outline-light btn-sm" type="button" id="referenceClearImage" aria-label="参考画像をクリア"><i class="bi bi-x-lg"></i></button>
                   </div>
                 </div>
-                <input class="visually-hidden" type="file" id="edit_base_image" name="edit_base_image" accept="image/png, image/jpeg">
+                <input class="visually-hidden" type="file" id="reference_image" name="reference_image" accept="image/png, image/jpeg">
               </div>
-              <div class="col-md-6">
-                <label class="form-label mb-0">マスクプレビュー</label>
-                <div id="editMaskDropzone" class="upload-dropzone mt-2">
-                  <div id="editMaskPlaceholder" class="subtle-text mb-2">エディタで作成したマスクがここに表示されます</div>
-                  <img id="editMaskPreviewImage" class="preview-image d-none mb-2" alt="マスク画像プレビュー">
-                  <div id="editMaskFileMeta" class="small text-white-50 mb-2"></div>
+
+              <div class="flex-fill {% if current_mode == 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="rough_with_instructions,reference_style_colorize">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label mb-0" for="rough_image">ラフスケッチ（PNG/JPG/JPEG）</label>
+                </div>
+                <div id="roughDropzone" class="upload-dropzone">
+                  <div id="roughPlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+                  <img id="roughPreviewImage" class="preview-image d-none mb-2" alt="ラフ画像プレビュー">
+                  <div id="roughFileMeta" class="small text-white-50 mb-2"></div>
+                  <div class="d-flex justify-content-center gap-2">
+                    <label class="btn btn-outline-light btn-sm" for="rough_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
+                    <button class="btn btn-outline-light btn-sm" type="button" id="roughClearImage" aria-label="ラフ画像をクリア"><i class="bi bi-x-lg"></i></button>
+                  </div>
+                </div>
+                <input class="visually-hidden" type="file" id="rough_image" name="rough_image" accept="image/png, image/jpeg">
+              </div>
+            </div>
+
+            <div class="edit-panel d-none mt-3" data-mode-visible="inpaint_outpaint">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h5 class="mb-1">編集用画像</h5>
+                  <small class="text-white-50">マスクはエディタで描画して適用します。</small>
+                </div>
+                <button class="btn btn-outline-light btn-sm" type="button" id="openMaskEditorButton"><i class="bi bi-brush me-1"></i> エディタを開く</button>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label mb-0" for="edit_base_image">編集対象画像（PNG/JPG/JPEG）</label>
+                  <div id="editBaseDropzone" class="upload-dropzone mt-2">
+                    <div id="editBasePlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+                    <img id="editBasePreviewImage" class="preview-image d-none mb-2" alt="編集対象画像プレビュー">
+                    <div id="editBaseFileMeta" class="small text-white-50 mb-2"></div>
+                    <div class="d-flex justify-content-center gap-2">
+                      <label class="btn btn-outline-light btn-sm" for="edit_base_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
+                      <button class="btn btn-outline-light btn-sm" type="button" id="editBaseClearImage" aria-label="編集対象画像をクリア"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                  </div>
+                  <input class="visually-hidden" type="file" id="edit_base_image" name="edit_base_image" accept="image/png, image/jpeg">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label mb-0">マスクプレビュー</label>
+                  <div id="editMaskDropzone" class="upload-dropzone mt-2">
+                    <div id="editMaskPlaceholder" class="subtle-text mb-2">エディタで作成したマスクがここに表示されます</div>
+                    <img id="editMaskPreviewImage" class="preview-image d-none mb-2" alt="マスク画像プレビュー">
+                    <div id="editMaskFileMeta" class="small text-white-50 mb-2"></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
-              <div class="btn-group" role="group" aria-label="編集モード">
-                <button type="button" class="btn btn-outline-light active" data-edit-mode="inpaint">インペイント</button>
-                <button type="button" class="btn btn-outline-light" data-edit-mode="outpaint">アウトペイント</button>
+              <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                <div class="btn-group" role="group" aria-label="編集モード">
+                  <button type="button" class="btn btn-outline-light active" data-edit-mode="inpaint">インペイント</button>
+                  <button type="button" class="btn btn-outline-light" data-edit-mode="outpaint">アウトペイント</button>
+                </div>
+                <input type="hidden" name="edit_mode" id="editModeInput" value="inpaint">
               </div>
-              <input type="hidden" name="edit_mode" id="editModeInput" value="inpaint">
+              <div id="outpaintControls" class="mt-2 d-none">
+                <label class="form-label mb-1" for="outpaintScale">拡張倍率</label>
+                <select class="form-select" id="outpaintScale" name="outpaint_scale">
+                  <option value="1.2">1.2x</option>
+                  <option value="1.4">1.4x</option>
+                  <option value="1.6">1.6x</option>
+                  <option value="2.0">2.0x</option>
+                </select>
+                <small class="text-white-50 d-block mt-1">キャンバスを拡張し、拡張領域を自動マスクします。</small>
+              </div>
+              <input type="hidden" name="edit_mask_data" id="editMaskData">
+              <input type="hidden" name="edit_base_data" id="editBaseData">
             </div>
-            <div id="outpaintControls" class="mt-2 d-none">
-              <label class="form-label mb-1" for="outpaintScale">拡張倍率</label>
-              <select class="form-select" id="outpaintScale" name="outpaint_scale">
-                <option value="1.2">1.2x</option>
-                <option value="1.4">1.4x</option>
-                <option value="1.6">1.6x</option>
-                <option value="2.0">2.0x</option>
-              </select>
-              <small class="text-white-50 d-block mt-1">キャンバスを拡張し、拡張領域を自動マスクします。</small>
+
+            <div class="{% if current_mode != 'reference_style_colorize' %}d-none{% endif %} small text-white-50 mt-3" data-mode-visible="reference_style_colorize">
+              <i class="bi bi-info-circle me-1"></i> このモードのプロンプトは暫定的に固定です（完成絵の絵柄を参考にラフを仕上げます）。
             </div>
-            <div class="mt-3">
+          </div>
+
+          <div class="section-card">
+            <div class="section-header">
+              <h5 class="section-title mb-1">指示入力</h5>
+              <p class="section-description mb-0">色味・ポーズ・編集の指示など、仕上げに関する要望を記入します。</p>
+            </div>
+            <div class="{% if current_mode != 'rough_with_instructions' %}d-none{% endif %}" data-mode-visible="rough_with_instructions">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label" for="color_instruction">着色イメージや雰囲気</label>
+                <small id="colorCounter" class="text-white-50">0/1000</small>
+              </div>
+              <textarea class="form-control" id="color_instruction" name="color_instruction" rows="3" maxlength="1000" data-counter-target="colorCounter">帽子は赤、服は白ベースで差し色に青、肌は柔らかい色味でお願いします。</textarea>
+              <div class="form-text text-white-50">推奨: 1000文字以内。色味・質感・光源などを明示すると安定します。</div>
+            </div>
+
+            <div class="mt-3 {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}" data-mode-visible="rough_with_instructions">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label" for="pose_instruction">ポーズの指示</label>
+                <small id="poseCounter" class="text-white-50">0/1000</small>
+              </div>
+              <textarea class="form-control" id="pose_instruction" name="pose_instruction" rows="2" maxlength="1000" data-counter-target="poseCounter">キャラクターは元気にジャンプしているポーズでお願いします。</textarea>
+              <div class="form-text text-white-50">推奨: 動き・視線・カメラ距離を記載。</div>
+            </div>
+
+            <div class="{% if current_mode != 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="inpaint_outpaint">
               <label class="form-label" for="edit_instruction">追加指示</label>
               <textarea class="form-control" id="edit_instruction" name="edit_instruction" rows="3" maxlength="1000" placeholder="例: マスク領域に花柄を追加"></textarea>
               <div class="form-text text-white-50">指定がない限り構図・色味・絵柄は維持されます。</div>
             </div>
-            <input type="hidden" name="edit_mask_data" id="editMaskData">
-            <input type="hidden" name="edit_base_data" id="editBaseData">
-          </div>
-<div class="{% if current_mode != 'reference_style_colorize' %}d-none{% endif %} small text-white-50" data-mode-visible="reference_style_colorize">
-            <i class="bi bi-info-circle me-1"></i> このモードのプロンプトは暫定的に固定です（完成絵の絵柄を参考にラフを仕上げます）。
           </div>
 
-          <div class="{% if current_mode != 'rough_with_instructions' %}d-none{% endif %}" data-mode-visible="rough_with_instructions">
-            <div class="d-flex justify-content-between align-items-center">
-              <label class="form-label" for="color_instruction">着色イメージや雰囲気</label>
-              <small id="colorCounter" class="text-white-50">0/1000</small>
+          <details class="section-card section-card-details {% if current_mode == 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="rough_with_instructions,reference_style_colorize">
+            <summary class="section-summary">
+              <div>
+                <h5 class="section-title mb-1">詳細設定（アスペクト比/解像度）</h5>
+                <p class="section-description mb-0">必要に応じて生成の比率と解像度を指定できます。</p>
+              </div>
+              <span class="section-toggle text-white-50">開く</span>
+            </summary>
+            <div class="section-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="aspect_ratio">アスペクト比（任意）</label>
+                  <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                    {% for label in aspect_ratio_options %}
+                    <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="resolution">解像度（任意）</label>
+                  <select class="form-select" id="resolution" name="resolution">
+                    {% for label in resolution_options %}
+                    <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
             </div>
-            <textarea class="form-control" id="color_instruction" name="color_instruction" rows="3" maxlength="1000" data-counter-target="colorCounter">帽子は赤、服は白ベースで差し色に青、肌は柔らかい色味でお願いします。</textarea>
-            <div class="form-text text-white-50">推奨: 1000文字以内。色味・質感・光源などを明示すると安定します。</div>
-          </div>
-
-          <div class="{% if current_mode != 'rough_with_instructions' %}d-none{% endif %}" data-mode-visible="rough_with_instructions">
-            <div class="d-flex justify-content-between align-items-center">
-              <label class="form-label" for="pose_instruction">ポーズの指示</label>
-              <small id="poseCounter" class="text-white-50">0/1000</small>
-            </div>
-            <textarea class="form-control" id="pose_instruction" name="pose_instruction" rows="2" maxlength="1000" data-counter-target="poseCounter">キャラクターは元気にジャンプしているポーズでお願いします。</textarea>
-            <div class="form-text text-white-50">推奨: 動き・視線・カメラ距離を記載。</div>
-          </div>
-
-          <div class="row g-3 {% if current_mode == 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="rough_with_instructions,reference_style_colorize">
-            <div class="col-md-6">
-              <label class="form-label" for="aspect_ratio">アスペクト比（任意）</label>
-              <select class="form-select" id="aspect_ratio" name="aspect_ratio">
-                {% for label in aspect_ratio_options %}
-                <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="resolution">解像度（任意）</label>
-              <select class="form-select" id="resolution" name="resolution">
-                {% for label in resolution_options %}
-                <option value="{{ label }}">{{ '自動' if label == 'auto' else label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-          </div>
+          </details>
 
           <div class="d-grid d-md-flex align-items-center gap-3">
             <button class="btn btn-primary flex-grow-1" id="generateButton" type="submit">

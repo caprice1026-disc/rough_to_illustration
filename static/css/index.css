@@ -216,3 +216,53 @@
   border-color: rgba(31, 209, 249, 0.35);
   color: #b8ecff;
 }
+
+.section-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.section-header {
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 1.05rem;
+}
+
+.section-description {
+  color: rgba(219, 229, 255, 0.75);
+  font-size: 0.92rem;
+}
+
+.section-card-details {
+  padding: 0;
+}
+
+.section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-card-details[open] .section-summary {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-body {
+  padding: 16px;
+}
+
+.section-toggle {
+  font-size: 0.85rem;
+}
