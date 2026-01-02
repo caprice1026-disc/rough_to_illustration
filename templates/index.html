@@ -70,17 +70,57 @@
                   </small>
                 </div>
               </div>
-              <div class="nav nav-pills mode-pills" id="modePills" role="tablist" aria-label="生成モード">
+              <div class="mode-card-group" id="modeCards" role="radiogroup" aria-label="生成モード">
                 {% for mode in modes %}
-                <button
-                  type="button"
-                  class="nav-link {% if mode.id == current_mode %}active{% endif %} {% if not mode.enabled %}disabled{% endif %}"
-                  data-mode="{{ mode.id }}"
-                  data-mode-description="{{ mode.description }}"
-                  {% if not mode.enabled %}disabled aria-disabled="true"{% endif %}
-                >
-                  {{ mode.label }}
-                </button>
+                {% if mode.id == 'rough_with_instructions' %}
+                {% set mode_usage = 'ラフから仕上げを指示したいとき' %}
+                {% set mode_required = 'ラフスケッチ1枚' %}
+                {% set mode_result = '指示に沿った仕上げイラスト' %}
+                {% elif mode.id == 'reference_style_colorize' %}
+                {% set mode_usage = '完成絵のタッチでラフを仕上げたいとき' %}
+                {% set mode_required = '完成絵1枚＋ラフ1枚' %}
+                {% set mode_result = '参照絵柄に合わせた着色・仕上げ' %}
+                {% elif mode.id == 'inpaint_outpaint' %}
+                {% set mode_usage = '一部修正や余白の拡張をしたいとき' %}
+                {% set mode_required = '編集対象画像1枚（マスク使用）' %}
+                {% set mode_result = '指定範囲のみ修正/拡張' %}
+                {% else %}
+                {% set mode_usage = '' %}
+                {% set mode_required = '' %}
+                {% set mode_result = '' %}
+                {% endif %}
+                <label class="mode-card {% if mode.id == current_mode %}is-active{% endif %} {% if not mode.enabled %}is-disabled{% endif %}">
+                  <input
+                    type="radio"
+                    name="mode-card"
+                    class="mode-card-input"
+                    data-mode="{{ mode.id }}"
+                    data-mode-description="{{ mode.description }}"
+                    {% if mode.id == current_mode %}checked{% endif %}
+                    {% if not mode.enabled %}disabled aria-disabled="true"{% endif %}
+                  >
+                  <span class="mode-card-body">
+                    <span class="mode-card-header">
+                      <span class="mode-card-title">{{ mode.label }}</span>
+                      {% if not mode.enabled %}<span class="mode-card-badge">準備中</span>{% endif %}
+                    </span>
+                    <span class="mode-card-description">{{ mode.description }}</span>
+                    <span class="mode-card-meta">
+                      <span class="mode-card-row">
+                        <span class="mode-card-label">用途</span>
+                        <span class="mode-card-value">{{ mode_usage }}</span>
+                      </span>
+                      <span class="mode-card-row">
+                        <span class="mode-card-label">必要画像</span>
+                        <span class="mode-card-value">{{ mode_required }}</span>
+                      </span>
+                      <span class="mode-card-row">
+                        <span class="mode-card-label">結果</span>
+                        <span class="mode-card-value">{{ mode_result }}</span>
+                      </span>
+                    </span>
+                  </span>
+                </label>
                 {% endfor %}
               </div>
             </div>

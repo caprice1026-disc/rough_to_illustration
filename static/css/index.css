@@ -150,28 +150,95 @@
   padding: 12px;
 }
 
-.mode-pills {
+.mode-card-group {
+  display: grid;
+  gap: 12px;
+}
+
+.mode-card {
+  display: block;
+  cursor: pointer;
+  margin: 0;
+  position: relative;
+}
+
+.mode-card-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-card-body {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mode-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+  color: #f4fbff;
+}
+
+.mode-card-title {
+  font-size: 1rem;
+}
+
+.mode-card-badge {
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(219, 229, 255, 0.85);
+}
+
+.mode-card-description {
+  color: rgba(219, 229, 255, 0.8);
+  font-size: 0.92rem;
+}
+
+.mode-card-meta {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: rgba(219, 229, 255, 0.75);
+}
+
+.mode-card-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
   gap: 8px;
 }
 
-.mode-pills .nav-link {
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #dfe5ff;
-  padding: 8px 12px;
+.mode-card-label {
+  color: rgba(219, 229, 255, 0.6);
 }
 
-.mode-pills .nav-link.active {
-  background: rgba(31, 209, 249, 0.14);
-  border-color: rgba(31, 209, 249, 0.35);
-  color: #b8ecff;
+.mode-card-value {
+  color: rgba(219, 229, 255, 0.9);
 }
 
-.mode-pills .nav-link.disabled {
+.mode-card.is-active .mode-card-body {
+  border-color: rgba(31, 209, 249, 0.6);
+  background: rgba(31, 209, 249, 0.12);
+  box-shadow: 0 0 0 3px rgba(31, 209, 249, 0.12);
+}
+
+.mode-card.is-disabled {
   opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mode-card.is-disabled .mode-card-body {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 

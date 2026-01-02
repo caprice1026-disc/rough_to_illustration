@@ -149,12 +149,12 @@ const MODE_SUBMIT_LABELS = {
 };
 
 const initModeSwitch = (uploaders) => {
-  const modePills = document.getElementById('modePills');
+  const modeCards = document.getElementById('modeCards');
   const modeInput = document.getElementById('generationModeInput');
   const modeDescription = document.getElementById('modeDescription');
   const submitLabel = document.getElementById('submitLabel');
 
-  if (!modePills || !modeInput) return;
+  if (!modeCards || !modeInput) return;
 
   const splitModes = (raw) =>
     String(raw || '')
@@ -186,9 +186,12 @@ const initModeSwitch = (uploaders) => {
       input.value = modeId;
     });
 
-    const buttons = modePills.querySelectorAll('button[data-mode]');
-    buttons.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === modeId);
+    const inputs = modeCards.querySelectorAll('input[data-mode]');
+    inputs.forEach((input) => {
+      const isActive = input.dataset.mode === modeId;
+      input.checked = isActive;
+      const card = input.closest('.mode-card');
+      if (card) card.classList.toggle('is-active', isActive);
     });
 
     toggleVisibility(modeId);
@@ -197,8 +200,8 @@ const initModeSwitch = (uploaders) => {
       submitLabel.textContent = MODE_SUBMIT_LABELS[modeId];
     }
 
-    const activeButton = modePills.querySelector(`button[data-mode="${modeId}"]`);
-    const description = activeButton ? activeButton.dataset.modeDescription : '';
+    const activeInput = modeCards.querySelector(`input[data-mode="${modeId}"]`);
+    const description = activeInput ? activeInput.dataset.modeDescription : '';
     if (modeDescription) modeDescription.textContent = description || '';
 
     if (uploaders && uploaders.reference && modeId !== 'reference_style_colorize') {
@@ -220,10 +223,10 @@ const initModeSwitch = (uploaders) => {
     if (updateUrl) setModeInUrl(modeId);
   };
 
-  modePills.querySelectorAll('button[data-mode]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (btn.disabled) return;
-      applyMode(btn.dataset.mode);
+  modeCards.querySelectorAll('input[data-mode]').forEach((input) => {
+    input.addEventListener('change', () => {
+      if (input.disabled) return;
+      applyMode(input.dataset.mode);
     });
   });
 
