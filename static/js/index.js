@@ -336,8 +336,15 @@ const initSubmitState = () => {
   const submitLabel = document.getElementById('submitLabel');
   const statusBadge = document.getElementById('generationStatusBadge');
   const statusText = document.getElementById('generationStatusText');
+  const loadingBar = document.getElementById('generationLoadingBar');
 
   if (!form || !submitBtn || !spinner || !submitLabel) return;
+
+  const syncLoadingBar = () => {
+    if (!loadingBar || !statusBadge) return;
+    const isGenerating = statusBadge.textContent.trim() === '生成中';
+    loadingBar.classList.toggle('d-none', !isGenerating);
+  };
 
   form.addEventListener('submit', () => {
     submitBtn.disabled = true;
@@ -345,7 +352,10 @@ const initSubmitState = () => {
     submitLabel.textContent = '送信中...';
     if (statusBadge) statusBadge.textContent = '生成中';
     if (statusText) statusText.textContent = '生成中です。しばらくお待ちください。';
+    syncLoadingBar();
   });
+
+  syncLoadingBar();
 };
 
 const initPresets = () => {

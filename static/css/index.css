@@ -160,6 +160,66 @@
   animation: shimmer 1.2s infinite;
 }
 
+.generation-loading-bar {
+  margin: 12px 0 4px;
+}
+
+.empty-illustration-state {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.empty-illustration-icon {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 12px;
+  color: rgba(184, 236, 255, 0.8);
+}
+
+.empty-illustration-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-steps {
+  list-style: none;
+  padding: 0;
+  margin: 12px auto 16px;
+  max-width: 260px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  color: rgba(219, 229, 255, 0.85);
+  font-size: 0.92rem;
+  counter-reset: empty-step;
+}
+
+.empty-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.empty-steps li::before {
+  content: counter(empty-step);
+  counter-increment: empty-step;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  background: rgba(31, 209, 249, 0.18);
+  border: 1px solid rgba(31, 209, 249, 0.35);
+  color: #b8ecff;
+  font-weight: 600;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @keyframes shimmer {
   0% {
     filter: brightness(0.8);

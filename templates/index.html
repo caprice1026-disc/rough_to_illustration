@@ -385,6 +385,7 @@
         <div class="small text-white-50 mb-3" id="generationStatusText">
           {{ '生成が完了しました。' if image_data else 'ここに生成結果が表示されます。' }}
         </div>
+        <div class="loading-bar generation-loading-bar d-none" id="generationLoadingBar" aria-hidden="true"></div>
         {% if image_data %}
         <div class="text-center">
           <img class="img-fluid rounded mb-3" src="{{ image_data }}" alt="生成イラスト">
@@ -393,15 +394,31 @@
           </div>
         </div>
         {% else %}
-        <p class="subtle-text mb-0 {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}" data-mode-visible="rough_with_instructions">
-          ラフスケッチをアップロードして「イラスト生成」を押すと、ここにプレビューが表示されます。
-        </p>
-        <p class="subtle-text mb-0 {% if current_mode != 'reference_style_colorize' %}d-none{% endif %}" data-mode-visible="reference_style_colorize">
-          参考（完成）画像とラフスケッチをアップロードして「参照して着色」を押すと、ここにプレビューが表示されます。
-        </p>
-        <p class="subtle-text mb-0 {% if current_mode != 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="inpaint_outpaint">
-          編集対象画像をアップロードしてマスクを描き、「編集をリクエスト」を押すと、ここにプレビューが表示されます。
-        </p>
+        <div class="empty-illustration-state">
+          <div class="empty-illustration-icon" aria-hidden="true">
+            <svg viewBox="0 0 96 96" role="presentation" focusable="false">
+              <rect x="14" y="18" width="68" height="60" rx="12" ry="12" fill="none" stroke="currentColor" stroke-width="3"></rect>
+              <circle cx="36" cy="42" r="6" fill="currentColor" opacity="0.6"></circle>
+              <path d="M26 70l18-22 14 16 12-12 12 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"></path>
+            </svg>
+          </div>
+          <h4 class="mb-2">まだ生成結果がありません</h4>
+          <ol class="empty-steps">
+            <li>モードを選択</li>
+            <li>画像を追加</li>
+            <li>指示を入力</li>
+            <li>生成をリクエスト</li>
+          </ol>
+          <p class="subtle-text mb-0 {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}" data-mode-visible="rough_with_instructions">
+            ラフスケッチをアップロードして「イラスト生成」を押すと、ここにプレビューが表示されます。
+          </p>
+          <p class="subtle-text mb-0 {% if current_mode != 'reference_style_colorize' %}d-none{% endif %}" data-mode-visible="reference_style_colorize">
+            参考（完成）画像とラフスケッチをアップロードして「参照して着色」を押すと、ここにプレビューが表示されます。
+          </p>
+          <p class="subtle-text mb-0 {% if current_mode != 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="inpaint_outpaint">
+            編集対象画像をアップロードしてマスクを描き、「編集をリクエスト」を押すと、ここにプレビューが表示されます。
+          </p>
+        </div>
         {% endif %}
       </div>
     </div>
