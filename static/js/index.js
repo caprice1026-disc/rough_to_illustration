@@ -14,6 +14,50 @@ const initCounters = () => {
   });
 };
 
+const createDropzoneStatus = (config) => {
+  const dropzone = config.dropzone;
+  const statusText = config.statusText;
+  const statusIcon = config.statusIcon;
+  if (!dropzone) return null;
+
+  const iconClasses = {
+    ready: 'bi-circle',
+    hasFile: 'bi-check-circle-fill',
+    error: 'bi-exclamation-triangle-fill',
+  };
+
+  const setIcon = (state) => {
+    if (!statusIcon) return;
+    statusIcon.classList.remove(...Object.values(iconClasses));
+    statusIcon.classList.add(iconClasses[state] || iconClasses.ready);
+  };
+
+  const setState = (state, message) => {
+    dropzone.classList.remove('is-ready', 'has-file', 'has-error');
+    if (state === 'hasFile') {
+      dropzone.classList.add('has-file');
+    } else if (state === 'error') {
+      dropzone.classList.add('has-error');
+    } else {
+      dropzone.classList.add('is-ready');
+    }
+    if (statusText) statusText.textContent = message || '';
+    setIcon(state);
+  };
+
+  const setReady = () => setState('ready', config.readyText || '未選択');
+  const setHasFile = () => setState('hasFile', config.hasFileText || '選択済み');
+  const setError = (message) => setState('error', message || config.errorText || 'エラー');
+
+  setReady();
+
+  return {
+    setReady,
+    setHasFile,
+    setError,
+  };
+};
+
 const bindImageUploader = (config) => {
   const fileInput = document.getElementById(config.inputId);
   const previewImage = document.getElementById(config.previewId);
@@ -21,8 +65,19 @@ const bindImageUploader = (config) => {
   const fileMeta = document.getElementById(config.metaId);
   const dropzone = document.getElementById(config.dropzoneId);
   const clearButton = document.getElementById(config.clearButtonId);
+  const statusText = document.getElementById(config.statusTextId);
+  const statusIcon = document.getElementById(config.statusIconId);
 
   if (!fileInput || !previewImage || !placeholder || !fileMeta || !dropzone || !clearButton) return null;
+
+  const dropzoneStatus = createDropzoneStatus({
+    dropzone,
+    statusText,
+    statusIcon,
+    readyText: config.readyText,
+    hasFileText: config.hasFileText,
+    errorText: config.errorText,
+  });
 
   const resetPreview = () => {
     previewImage.classList.add('d-none');
@@ -30,13 +85,27 @@ const bindImageUploader = (config) => {
     placeholder.classList.remove('d-none');
     fileMeta.textContent = '';
     fileInput.value = '';
+    if (dropzoneStatus) dropzoneStatus.setReady();
     if (typeof config.onClear === 'function') {
       config.onClear();
     }
   };
 
+  const rejectFile = (message) => {
+    previewImage.classList.add('d-none');
+    previewImage.removeAttribute('src');
+    placeholder.classList.remove('d-none');
+    fileMeta.textContent = '';
+    fileInput.value = '';
+    if (dropzoneStatus) dropzoneStatus.setError(message);
+  };
+
   const handleFile = (file) => {
     if (!file) return;
+    if (Array.isArray(config.acceptedTypes) && !config.acceptedTypes.includes(file.type)) {
+      rejectFile(config.errorText || 'エラー: 対応していない形式です');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       previewImage.src = event.target.result;
@@ -44,9 +113,13 @@ const bindImageUploader = (config) => {
       placeholder.classList.add('d-none');
       const sizeKb = (file.size / 1024).toFixed(1);
       fileMeta.textContent = `${file.name} / ${sizeKb} KB`;
+      if (dropzoneStatus) dropzoneStatus.setHasFile();
       if (typeof config.onFile === 'function') {
         config.onFile(file);
       }
+    };
+    reader.onerror = () => {
+      rejectFile('エラー: 画像の読み込みに失敗しました');
     };
     reader.readAsDataURL(file);
   };
@@ -79,7 +152,7 @@ const bindImageUploader = (config) => {
     handleFile(file);
   });
 
-  return { resetPreview };
+  return { resetPreview, dropzoneStatus };
 };
 
 const initImagePreviews = () => {
@@ -88,6 +161,16 @@ const initImagePreviews = () => {
   const maskPreview = document.getElementById('editMaskPreviewImage');
   const maskPlaceholder = document.getElementById('editMaskPlaceholder');
   const maskFileMeta = document.getElementById('editMaskFileMeta');
+  const maskDropzone = document.getElementById('editMaskDropzone');
+  const maskStatusText = document.getElementById('editMaskStatusText');
+  const maskStatusIcon = document.getElementById('editMaskStatusIcon');
+  const maskDropzoneStatus = createDropzoneStatus({
+    dropzone: maskDropzone,
+    statusText: maskStatusText,
+    statusIcon: maskStatusIcon,
+    readyText: '未選択',
+    hasFileText: '選択済み',
+  });
   const resetEditMaskPreview = () => {
     if (maskPreview) {
       maskPreview.classList.add('d-none');
@@ -95,6 +178,7 @@ const initImagePreviews = () => {
     }
     if (maskPlaceholder) maskPlaceholder.classList.remove('d-none');
     if (maskFileMeta) maskFileMeta.textContent = '';
+    if (maskDropzoneStatus) maskDropzoneStatus.setReady();
   };
   const clearEditMaskData = () => {
     if (editMaskData) editMaskData.value = '';
@@ -112,6 +196,10 @@ const initImagePreviews = () => {
       metaId: 'roughFileMeta',
       dropzoneId: 'roughDropzone',
       clearButtonId: 'roughClearImage',
+      statusTextId: 'roughStatusText',
+      statusIconId: 'roughStatusIcon',
+      acceptedTypes: ['image/png', 'image/jpeg'],
+      errorText: 'エラー: PNG/JPG/JPEGのみ対応',
     }),
     reference: bindImageUploader({
       inputId: 'reference_image',
@@ -120,6 +208,10 @@ const initImagePreviews = () => {
       metaId: 'referenceFileMeta',
       dropzoneId: 'referenceDropzone',
       clearButtonId: 'referenceClearImage',
+      statusTextId: 'referenceStatusText',
+      statusIconId: 'referenceStatusIcon',
+      acceptedTypes: ['image/png', 'image/jpeg'],
+      errorText: 'エラー: PNG/JPG/JPEGのみ対応',
     }),
     editBase: bindImageUploader({
       inputId: 'edit_base_image',
@@ -128,6 +220,10 @@ const initImagePreviews = () => {
       metaId: 'editBaseFileMeta',
       dropzoneId: 'editBaseDropzone',
       clearButtonId: 'editBaseClearImage',
+      statusTextId: 'editBaseStatusText',
+      statusIconId: 'editBaseStatusIcon',
+      acceptedTypes: ['image/png', 'image/jpeg'],
+      errorText: 'エラー: PNG/JPG/JPEGのみ対応',
       onFile: () => {
         clearEditMaskData();
         clearEditBaseData();
@@ -139,7 +235,7 @@ const initImagePreviews = () => {
     }),
   };
 
-  return { ...uploaders, resetEditMaskPreview };
+  return { ...uploaders, resetEditMaskPreview, maskDropzoneStatus };
 };
 
 const MODE_SUBMIT_LABELS = {
@@ -303,7 +399,7 @@ const initPresets = () => {
 };
 
 
-const initMaskEditor = () => {
+const initMaskEditor = (maskDropzoneStatus) => {
   const modalEl = document.getElementById('maskEditorModal');
   const openButton = document.getElementById('openMaskEditorButton');
   const baseInput = document.getElementById('edit_base_image');
@@ -505,6 +601,7 @@ const initMaskEditor = () => {
       }
       if (maskPlaceholder) maskPlaceholder.classList.add('d-none');
       if (maskFileMeta) maskFileMeta.textContent = 'エディタで作成したマスク';
+      if (maskDropzoneStatus) maskDropzoneStatus.setHasFile();
       if (modal) modal.hide();
     });
   }
@@ -518,7 +615,7 @@ const bootstrapIndexPage = () => {
   initModeSwitch(uploaders);
   initSubmitState();
   initPresets();
-  initMaskEditor();
+  initMaskEditor(uploaders ? uploaders.maskDropzoneStatus : null);
 };
 
 document.addEventListener('DOMContentLoaded', bootstrapIndexPage);
