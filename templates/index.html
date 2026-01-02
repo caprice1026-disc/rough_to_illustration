@@ -10,6 +10,24 @@
       <span class="badge badge-soft">ローディング表示</span>
     </div>
     <h1 class="hero-title mb-2">モードを切り替えて、ラフを高品質イラストへ</h1>
+    <ol class="stepper mb-3" aria-label="利用ステップ">
+      <li class="stepper-item is-current">
+        <span class="stepper-badge">1</span>
+        <span class="stepper-label">モード選択</span>
+      </li>
+      <li class="stepper-item">
+        <span class="stepper-badge">2</span>
+        <span class="stepper-label">ファイル/指示入力</span>
+      </li>
+      <li class="stepper-item">
+        <span class="stepper-badge">3</span>
+        <span class="stepper-label">送信</span>
+      </li>
+      <li class="stepper-item">
+        <span class="stepper-badge">4</span>
+        <span class="stepper-label">結果確認</span>
+      </li>
+    </ol>
     <p class="subtle-text mb-3">ラフ1枚＋指示、または完成絵参照＋ラフ（2枚）で、Gemini に仕上げを依頼します。プレビューで確認しながら安心して送信できます。</p>
     <div class="d-flex flex-wrap gap-2">
       <div class="pill"><i class="bi bi-magic"></i> ブラシアップと欠損補完</div>
@@ -25,7 +43,7 @@
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h2 class="card-title mb-0">生成リクエスト</h2>
-          <span class="option-chip"><i class="bi bi-check2-circle"></i> ステップ 1</span>
+          <span class="option-chip"><i class="bi bi-pencil-square"></i> ファイル/指示入力</span>
         </div>
 
         <div class="mode-switch mb-3">
@@ -267,7 +285,7 @@
           <h3 class="card-title mb-0">生成されたイラスト</h3>
           <div class="d-flex align-items-center gap-2">
             <span class="badge badge-soft" id="generationStatusBadge">{{ '完了' if image_data else '待機中' }}</span>
-            <span class="option-chip"><i class="bi bi-download"></i> ステップ 2</span>
+            <span class="option-chip"><i class="bi bi-image"></i> 結果確認</span>
           </div>
         </div>
         <div class="small text-white-50 mb-3" id="generationStatusText">

@@ -46,6 +46,62 @@
   font-size: 0.9rem;
 }
 
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.stepper-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(219, 229, 255, 0.72);
+  font-size: 0.95rem;
+}
+
+.stepper-item::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  width: 12px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.stepper-item:last-child::after {
+  display: none;
+}
+
+.stepper-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(219, 229, 255, 0.9);
+  font-weight: 600;
+}
+
+.stepper-item.is-current {
+  color: #f4fbff;
+}
+
+.stepper-item.is-current .stepper-badge {
+  border-color: rgba(31, 209, 249, 0.6);
+  background: rgba(31, 209, 249, 0.2);
+  color: #b8ecff;
+  box-shadow: 0 0 0 3px rgba(31, 209, 249, 0.15);
+}
+
 .meta-label {
   color: #a8b3d7;
   font-size: 0.95rem;
