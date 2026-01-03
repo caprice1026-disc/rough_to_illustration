@@ -22,6 +22,11 @@ class User(db.Model, UserMixin):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    chat_sessions = db.relationship(
+        "ChatSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def set_password(self, raw_password: str) -> None:
         """平文パスワードを安全なハッシュに変換して保存する。"""
@@ -57,6 +62,61 @@ class IllustrationPreset(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     user = db.relationship("User", back_populates="presets")
+
+
+class ChatSession(db.Model):
+    """チャットセッションを表すモデル。"""
+
+    __tablename__ = "chat_sessions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    title = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    user = db.relationship("User", back_populates="chat_sessions")
+    messages = db.relationship(
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.created_at",
+    )
+
+
+class ChatMessage(db.Model):
+    """チャット内の1メッセージを表すモデル。"""
+
+    __tablename__ = "chat_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+    text = db.Column(db.Text)
+    mode_id = db.Column(db.String(80))
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    session = db.relationship("ChatSession", back_populates="messages")
+    attachments = db.relationship(
+        "ChatAttachment",
+        back_populates="message",
+        cascade="all, delete-orphan",
+    )
+
+
+class ChatAttachment(db.Model):
+    """チャットメッセージに紐づく画像ファイル。"""
+
+    __tablename__ = "chat_attachments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    message_id = db.Column(db.Integer, db.ForeignKey("chat_messages.id", ondelete="CASCADE"), nullable=False)
+    kind = db.Column(db.String(40), nullable=False)
+    image_id = db.Column(db.String(120), nullable=False)
+    mime_type = db.Column(db.String(40), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    message = db.relationship("ChatMessage", back_populates="attachments")
 
 
 @login_manager.user_loader

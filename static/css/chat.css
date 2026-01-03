@@ -1,0 +1,122 @@
+.chat-session-list .list-group-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e8ecff;
+  margin-bottom: 8px;
+  border-radius: 12px;
+}
+
+.chat-session-list .list-group-item.active {
+  background: rgba(31, 209, 249, 0.2);
+  border-color: rgba(31, 209, 249, 0.5);
+  color: #ffffff;
+}
+
+.chat-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.chat-message {
+  display: flex;
+}
+
+.chat-message.is-user {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(124, 77, 255, 0.12);
+  border: 1px solid rgba(124, 77, 255, 0.3);
+}
+
+.chat-message.is-assistant .chat-bubble {
+  background: rgba(31, 209, 249, 0.12);
+  border-color: rgba(31, 209, 249, 0.35);
+}
+
+.chat-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+}
+
+.chat-text {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.chat-attachments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.chat-attachment {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.chat-attachment img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-attachment-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 6px;
+}
+
+.chat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chat-input {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-extra {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-chat {
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}

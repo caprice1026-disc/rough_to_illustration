@@ -6,14 +6,20 @@ from config import Config
 from extensions import db, login_manager
 from models import User
 from views.auth import auth_bp
+from views.chat import chat_bp
 from views.main import main_bp
 
 
-def create_app() -> Flask:
+def create_app(config_object: object | None = None) -> Flask:
     """Flaskアプリケーションを生成し、Blueprintを登録する。"""
 
     app = Flask(__name__)
     app.config.from_object(Config)
+    if config_object:
+        if isinstance(config_object, dict):
+            app.config.update(config_object)
+        else:
+            app.config.from_object(config_object)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -55,6 +61,7 @@ def register_blueprints(app: Flask) -> None:
     """Blueprintをまとめて登録するヘルパー。"""
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(chat_bp)
     app.register_blueprint(main_bp)
 
 

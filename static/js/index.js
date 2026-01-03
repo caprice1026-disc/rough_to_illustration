@@ -242,6 +242,7 @@ const MODE_SUBMIT_LABELS = {
   rough_with_instructions: 'イラスト生成をリクエスト',
   reference_style_colorize: '参照して着色をリクエスト',
   inpaint_outpaint: '編集をリクエスト',
+  chat_mode: 'チャット画面へ移動',
 };
 
 const initModeSwitch = (uploaders) => {

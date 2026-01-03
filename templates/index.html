@@ -84,6 +84,10 @@
                 {% set mode_usage = '一部修正や余白の拡張をしたいとき' %}
                 {% set mode_required = '編集対象画像1枚（マスク使用）' %}
                 {% set mode_result = '指定範囲のみ修正/拡張' %}
+                {% elif mode.id == 'chat_mode' %}
+                {% set mode_usage = 'テキスト相談や対話しながら生成したいとき' %}
+                {% set mode_required = 'テキスト/画像（チャットで選択）' %}
+                {% set mode_result = 'チャット履歴に沿った応答/生成' %}
                 {% else %}
                 {% set mode_usage = '' %}
                 {% set mode_required = '' %}
@@ -122,6 +126,14 @@
                   </span>
                 </label>
                 {% endfor %}
+              </div>
+            </div>
+
+            <div class="chat-mode-panel d-none" data-mode-visible="chat_mode">
+              <div class="alert alert-info border-0 mb-0">
+                <h6 class="mb-1"><i class="bi bi-chat-left-text me-1"></i> チャットモードへ移動</h6>
+                <p class="mb-2">チャット欄のメニューから既存モードを選択し、会話の流れで生成や編集が行えます。</p>
+                <a class="btn btn-primary" href="{{ url_for('chat.index') }}">チャット画面を開く</a>
               </div>
             </div>
 
@@ -360,6 +372,8 @@
                 参照して着色をリクエスト
                 {% elif current_mode == 'inpaint_outpaint' %}
                 編集をリクエスト
+                {% elif current_mode == 'chat_mode' %}
+                チャット画面へ移動
                 {% else %}
                 イラスト生成をリクエスト
                 {% endif %}

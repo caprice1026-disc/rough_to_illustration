@@ -67,3 +67,21 @@ def build_edit_prompt(user_instruction: str, edit_mode: str) -> str:
         base_lines.append("User instruction: No additional instructions were provided.")
 
     return " ".join(base_lines)
+
+
+def build_chat_edit_prompt(user_instruction: str) -> str:
+    """チャット編集用の追加プロンプトを構築する。"""
+
+    base_lines = [
+        "You are refining the provided image based on the user's request.",
+        "Keep the overall composition and character identity unless explicitly instructed to change them.",
+        "Avoid adding text or logos unless requested.",
+    ]
+
+    instruction = user_instruction.strip()
+    if instruction:
+        base_lines.append(f"User request: {instruction}")
+    else:
+        base_lines.append("User request: No additional instructions were provided.")
+
+    return " ".join(base_lines)

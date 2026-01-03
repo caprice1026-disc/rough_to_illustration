@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEFAULT_IMAGE_MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3-pro-image-preview")
+DEFAULT_TEXT_MODEL = os.environ.get("GEMINI_TEXT_MODEL", "gemini-1.5-flash")
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,25 @@ class GeneratedImage:
     raw_bytes: bytes
     mime_type: str
     prompt: str
+
+
+def generate_text(prompt: str) -> str:
+    """プロンプトからテキスト応答を生成する。"""
+
+    response = _client().models.generate_content(
+        model=DEFAULT_TEXT_MODEL,
+        contents=[prompt],
+        config=types.GenerateContentConfig(response_modalities=["TEXT"]),
+    )
+
+    if getattr(response, "text", None):
+        return response.text
+
+    for part in getattr(response, "parts", []):
+        if getattr(part, "text", None):
+            return part.text
+
+    raise RuntimeError("APIレスポンスにテキストが含まれていません。")
 
 
 def _map_resolution_to_image_size(resolution: Optional[str]) -> Optional[str]:

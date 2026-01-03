@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card glass-card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="card-title mb-0">チャット履歴</h2>
+          <form method="post" action="{{ url_for('chat.new_session') }}">
+            <button class="btn btn-outline-light btn-sm" type="submit"><i class="bi bi-plus-circle me-1"></i> 新規</button>
+          </form>
+        </div>
+        <p class="small text-white-50 mb-3">セッションごとに履歴が保存されます。</p>
+        <div class="list-group chat-session-list">
+          {% for session in chat_sessions %}
+          <a
+            class="list-group-item list-group-item-action {% if session.id == current_session.id %}active{% endif %}"
+            href="{{ url_for('chat.index', session_id=session.id) }}"
+          >
+            <div class="fw-semibold">{{ session.title }}</div>
+            <small class="text-white-50">{{ session.updated_at.strftime('%Y-%m-%d %H:%M') if session.updated_at else '' }}</small>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card glass-card h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h2 class="card-title mb-1">チャットセッション</h2>
+            <div class="small text-white-50">メニューからモードを選択して送信できます。</div>
+          </div>
+          <span class="badge badge-soft">セッションID: {{ current_session.id }}</span>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          {% if current_session.messages %}
+          {% for message in current_session.messages %}
+          <div class="chat-message {{ 'is-user' if message.role == 'user' else 'is-assistant' }}">
+            <div class="chat-bubble">
+              <div class="chat-meta">
+                <span class="chat-role">{{ 'あなた' if message.role == 'user' else 'アシスタント' }}</span>
+                {% if message.mode_id %}
+                <span class="chat-mode">{{ message.mode_id }}</span>
+                {% endif %}
+              </div>
+              {% if message.text %}
+              <div class="chat-text">{{ message.text }}</div>
+              {% endif %}
+              {% if message.attachments %}
+              <div class="chat-attachments">
+                {% for attachment in message.attachments %}
+                <div class="chat-attachment">
+                  <img src="{{ url_for('chat.image', image_id=attachment.image_id) }}" alt="添付画像">
+                  <div class="chat-attachment-label">{{ attachment.kind }}</div>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="empty-chat">まだメッセージがありません。まずはテキストを送信してください。</div>
+          {% endif %}
+        </div>
+
+        <form class="chat-input mt-3" id="chatForm" data-endpoint="{{ url_for('chat.send_message') }}">
+          <input type="hidden" name="session_id" value="{{ current_session.id }}">
+          <input type="hidden" name="mode_id" id="chatModeInput" value="text_chat">
+
+          <div class="chat-toolbar">
+            <div class="dropdown">
+              <button
+                class="btn btn-outline-light dropdown-toggle"
+                type="button"
+                id="chatModeMenu"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="bi bi-sliders me-1"></i> <span id="chatModeLabel">テキストチャット</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="chatModeMenu">
+                {% for mode in chat_modes %}
+                <li>
+                  <button
+                    class="dropdown-item"
+                    type="button"
+                    data-mode-id="{{ mode.id }}"
+                    data-mode-label="{{ mode.label }}"
+                    data-mode-helper="{{ mode.helper }}"
+                  >
+                    <div class="fw-semibold">{{ mode.label }}</div>
+                    <small class="text-white-50">{{ mode.description }}</small>
+                  </button>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div class="small text-white-50" id="chatModeHelper">テキストのみで送信します。</div>
+          </div>
+
+          <div class="chat-input-body">
+            <label class="form-label" for="chatMessage">メッセージ</label>
+            <textarea
+              class="form-control"
+              id="chatMessage"
+              name="message"
+              rows="3"
+              placeholder="相談したい内容や指示を入力してください"
+            ></textarea>
+          </div>
+
+          <div class="chat-extra d-none" data-mode-visible="session_edit">
+            <div class="alert alert-info border-0">
+              <i class="bi bi-image me-1"></i>
+              直近の生成画像を使って再編集します。
+              {% if last_image %}
+              <span class="text-white-50">（画像が検出されています）</span>
+              {% else %}
+              <span class="text-white-50">（まだ画像がありません）</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="chat-extra d-none" data-mode-visible="rough_with_instructions">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="chatRoughImage">ラフ画像</label>
+                <input class="form-control" type="file" id="chatRoughImage" name="rough_image" accept="image/png, image/jpeg">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="chatColor">色の指示</label>
+                <textarea class="form-control" id="chatColor" name="color_instruction" rows="2" placeholder="例: 柔らかい夕焼けの色味"></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="chatPose">ポーズ指示</label>
+                <textarea class="form-control" id="chatPose" name="pose_instruction" rows="2" placeholder="例: ジャンプしているポーズ"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-extra d-none" data-mode-visible="reference_style_colorize">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="chatReferenceImage">完成絵（参考）</label>
+                <input class="form-control" type="file" id="chatReferenceImage" name="reference_image" accept="image/png, image/jpeg">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="chatReferenceRough">ラフ画像</label>
+                <input class="form-control" type="file" id="chatReferenceRough" name="rough_image" accept="image/png, image/jpeg">
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-extra d-none" data-mode-visible="inpaint_outpaint">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="chatEditBase">編集元画像</label>
+                <input class="form-control" type="file" id="chatEditBase" name="edit_base_image" accept="image/png, image/jpeg">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="chatEditMask">マスク画像</label>
+                <input class="form-control" type="file" id="chatEditMask" name="edit_mask_image" accept="image/png, image/jpeg">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="chatEditMode">編集モード</label>
+                <select class="form-select" id="chatEditMode" name="edit_mode">
+                  <option value="inpaint">インペイント</option>
+                  <option value="outpaint">アウトペイント</option>
+                </select>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label" for="chatEditInstruction">追加指示</label>
+                <textarea class="form-control" id="chatEditInstruction" name="edit_instruction" rows="2" placeholder="例: 背景に花を追加"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-actions">
+            <button class="btn btn-primary" type="submit" id="chatSubmit"><i class="bi bi-send me-1"></i> 送信</button>
+            <div class="text-white-50 small" id="chatStatus"></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
+{% endblock %}

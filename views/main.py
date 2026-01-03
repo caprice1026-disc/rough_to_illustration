@@ -19,7 +19,13 @@ from services.generation_service import (
     run_edit_generation,
     save_result_to_session,
 )
-from services.modes import ALL_MODES, MODE_REFERENCE_STYLE_COLORIZE, MODE_INPAINT_OUTPAINT, normalize_mode_id
+from services.modes import (
+    ALL_MODES,
+    MODE_CHAT,
+    MODE_INPAINT_OUTPAINT,
+    MODE_REFERENCE_STYLE_COLORIZE,
+    normalize_mode_id,
+)
 
 
 main_bp = Blueprint("main", __name__)
@@ -61,6 +67,8 @@ def index():
         resolution_label = request.form.get("resolution") or "auto"
 
         try:
+            if current_mode == MODE_CHAT.id:
+                return redirect(url_for("chat.index"))
             if current_mode == MODE_REFERENCE_STYLE_COLORIZE.id:
                 reference_file = request.files.get("reference_image")
                 rough_file = request.files.get("rough_image")

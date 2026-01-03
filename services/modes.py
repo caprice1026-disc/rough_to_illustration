@@ -33,10 +33,17 @@ MODE_INPAINT_OUTPAINT = GenerationMode(
     enabled=True,
 )
 
+MODE_CHAT = GenerationMode(
+    id="chat_mode",
+    label="チャットモード（テキスト/画像）",
+    description="会話しながらテキスト相談や画像生成を行うチャット専用モードです。",
+)
+
 ALL_MODES: list[GenerationMode] = [
     MODE_ROUGH_WITH_INSTRUCTIONS,
     MODE_REFERENCE_STYLE_COLORIZE,
     MODE_INPAINT_OUTPAINT,
+    MODE_CHAT,
 ]
 
 DEFAULT_MODE_ID: str = MODE_ROUGH_WITH_INSTRUCTIONS.id
@@ -49,4 +56,3 @@ def normalize_mode_id(mode_id: Optional[str]) -> str:
         if mode.enabled and mode.id == mode_id:
             return mode.id
     return DEFAULT_MODE_ID
-
