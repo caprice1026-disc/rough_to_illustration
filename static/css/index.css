@@ -27,6 +27,12 @@
   background: rgba(31, 209, 249, 0.08);
 }
 
+.upload-dropzone:focus-visible {
+  outline: none;
+  border-color: rgba(31, 209, 249, 0.8);
+  box-shadow: 0 0 0 3px rgba(31, 209, 249, 0.18);
+}
+
 .upload-status {
   display: inline-flex;
   align-items: center;
@@ -253,6 +259,100 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px;
+}
+
+.mode-tab-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(219, 229, 255, 0.9);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mode-tab:hover {
+  border-color: rgba(31, 209, 249, 0.4);
+}
+
+.mode-tab.is-active {
+  border-color: rgba(31, 209, 249, 0.7);
+  background: rgba(31, 209, 249, 0.2);
+  color: #e9fbff;
+  box-shadow: 0 0 0 3px rgba(31, 209, 249, 0.16);
+}
+
+.mode-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-tab-title {
+  font-weight: 600;
+}
+
+.mode-tab-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(219, 229, 255, 0.85);
+}
+
+.mode-summary-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mode-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mode-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(31, 209, 249, 0.18);
+  color: #b8ecff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mode-summary-description {
+  color: rgba(219, 229, 255, 0.85);
+  margin-bottom: 12px;
+}
+
+.mode-summary-grid {
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+
+.mode-summary-label {
+  color: rgba(219, 229, 255, 0.65);
+  display: block;
+  font-size: 0.82rem;
+}
+
+.mode-summary-value {
+  color: rgba(219, 229, 255, 0.92);
 }
 
 .mode-card-group {

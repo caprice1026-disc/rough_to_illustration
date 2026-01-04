@@ -126,6 +126,7 @@ def run_generation_with_reference(
     *,
     reference_file: Optional[FileStorage],
     rough_file: Optional[FileStorage],
+    reference_instruction: str,
     aspect_ratio_label: Optional[str],
     resolution_label: Optional[str],
 ) -> GenerationResult:
@@ -135,7 +136,7 @@ def run_generation_with_reference(
     rough_image = decode_uploaded_image(rough_file, label="ラフスケッチ")
     aspect_ratio = normalize_optional(aspect_ratio_label)
     resolution = normalize_optional(resolution_label)
-    prompt = build_reference_style_colorize_prompt()
+    prompt = build_reference_style_colorize_prompt(reference_instruction)
 
     contents = [
         "これから2枚の画像を渡します。1枚目は編集対象のラフスケッチです。",
