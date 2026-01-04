@@ -39,10 +39,14 @@ REFERENCE_STYLE_COLORIZE_PROMPT = """
 """
 
 
-def build_reference_style_colorize_prompt() -> str:
-    """完成絵(参照)＋ラフ(対象)の2枚入力モード用の固定プロンプト。"""
+def build_reference_style_colorize_prompt(user_instruction: str = "") -> str:
+    """完成絵(参照)＋ラフ(対象)の2枚入力モード用のプロンプトを構築する。"""
 
-    return REFERENCE_STYLE_COLORIZE_PROMPT.strip()
+    prompt = REFERENCE_STYLE_COLORIZE_PROMPT.strip()
+    instruction = user_instruction.strip()
+    if instruction:
+        prompt = f"{prompt}\n\nUser additional instruction: {instruction}"
+    return prompt
 
 
 

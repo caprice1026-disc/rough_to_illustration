@@ -72,9 +72,11 @@ def index():
             if current_mode == MODE_REFERENCE_STYLE_COLORIZE.id:
                 reference_file = request.files.get("reference_image")
                 rough_file = request.files.get("rough_image")
+                reference_instruction = request.form.get("reference_instruction", "")
                 result = run_generation_with_reference(
                     reference_file=reference_file,
                     rough_file=rough_file,
+                    reference_instruction=reference_instruction,
                     aspect_ratio_label=aspect_ratio_label,
                     resolution_label=resolution_label,
                 )
@@ -160,7 +162,7 @@ def download():
 @main_bp.route("/presets", methods=["POST"])
 @login_required
 def create_preset():
-    """色とポーズの指示をプリセットとして保存する。"""
+    """各モードの指示をプリセットとして保存する。"""
 
     mode = normalize_mode_id(request.form.get("mode"))
     name = (request.form.get("preset_name") or "").strip()
@@ -175,13 +177,22 @@ def create_preset():
         flash("プリセット名は80文字以内にしてください。", "error")
         return redirect(url_for("main.index", mode=mode))
 
-    if not color_instruction or not pose_instruction:
-        flash("色とポーズの指示を両方入力してください。", "error")
-        return redirect(url_for("main.index", mode=mode))
+    if mode in {MODE_REFERENCE_STYLE_COLORIZE.id, MODE_INPAINT_OUTPAINT.id}:
+        if not color_instruction:
+            flash("追加指示を入力してください。", "error")
+            return redirect(url_for("main.index", mode=mode))
+        pose_instruction = ""
+        if len(color_instruction) > 1000:
+            flash("文字数上限を超えています。入力内容を短くしてください。", "error")
+            return redirect(url_for("main.index", mode=mode))
+    else:
+        if not color_instruction or not pose_instruction:
+            flash("色とポーズの指示を両方入力してください。", "error")
+            return redirect(url_for("main.index", mode=mode))
 
-    if len(color_instruction) > 200 or len(pose_instruction) > 160:
-        flash("文字数上限を超えています。入力内容を短くしてください。", "error")
-        return redirect(url_for("main.index", mode=mode))
+        if len(color_instruction) > 200 or len(pose_instruction) > 160:
+            flash("文字数上限を超えています。入力内容を短くしてください。", "error")
+            return redirect(url_for("main.index", mode=mode))
 
     preset = IllustrationPreset(
         user_id=current_user.id,

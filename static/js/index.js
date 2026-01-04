@@ -369,8 +369,15 @@ const initPresets = () => {
   const presetPoseInput = document.getElementById('preset_pose_value');
   const colorTextarea = document.getElementById('color_instruction');
   const poseTextarea = document.getElementById('pose_instruction');
+  const referenceTextarea = document.getElementById('reference_instruction');
+  const editTextarea = document.getElementById('edit_instruction');
+  const modeInput = document.getElementById('generationModeInput');
 
-  if (!panel || !presetSelect || !deletePresetId || !applyButton || !presetCreateForm || !presetColorInput || !presetPoseInput || !colorTextarea || !poseTextarea) {
+  if (!panel || !presetSelect || !deletePresetId || !applyButton || !presetCreateForm || !presetColorInput || !presetPoseInput || !modeInput) {
+    return;
+  }
+
+  if (!colorTextarea && !poseTextarea && !referenceTextarea && !editTextarea) {
     return;
   }
 
@@ -384,14 +391,30 @@ const initPresets = () => {
 
   const findPreset = (presetId) => presets.find((preset) => String(preset.id) === String(presetId));
 
+  const getModeFields = (modeId) => {
+    if (modeId === 'reference_style_colorize') {
+      return { primary: referenceTextarea, secondary: null };
+    }
+    if (modeId === 'inpaint_outpaint') {
+      return { primary: editTextarea, secondary: null };
+    }
+    return { primary: colorTextarea, secondary: poseTextarea };
+  };
+
   const applyPreset = () => {
     const selected = findPreset(presetSelect.value);
     if (!selected) return;
 
-    colorTextarea.value = selected.color || '';
-    poseTextarea.value = selected.pose || '';
-    colorTextarea.dispatchEvent(new Event('input'));
-    poseTextarea.dispatchEvent(new Event('input'));
+    const modeId = modeInput.value;
+    const { primary, secondary } = getModeFields(modeId);
+    if (!primary) return;
+
+    primary.value = selected.color || '';
+    primary.dispatchEvent(new Event('input'));
+    if (secondary) {
+      secondary.value = selected.pose || '';
+      secondary.dispatchEvent(new Event('input'));
+    }
   };
 
   const syncDeleteField = () => {
@@ -404,8 +427,11 @@ const initPresets = () => {
 
   presetCreateForm.addEventListener('submit', () => {
     // 現在のテキストエリア内容をプリセットとして保存する
-    presetColorInput.value = colorTextarea.value;
-    presetPoseInput.value = poseTextarea.value;
+    const modeId = modeInput.value;
+    const { primary, secondary } = getModeFields(modeId);
+    if (!primary) return;
+    presetColorInput.value = primary.value;
+    presetPoseInput.value = secondary ? secondary.value : '';
   });
 };
 

@@ -138,15 +138,17 @@
             </div>
 
             <div
-              class="preset-panel {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}"
+              class="preset-panel {% if current_mode not in ['rough_with_instructions', 'reference_style_colorize', 'inpaint_outpaint'] %}d-none{% endif %}"
               id="presetPanel"
-              data-mode-visible="rough_with_instructions"
+              data-mode-visible="rough_with_instructions,reference_style_colorize,inpaint_outpaint"
               data-presets='{{ presets_payload | tojson }}'
             >
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <div>
                   <h5 class="mb-0">マイプリセット</h5>
-                  <small class="text-white-50">色とポーズの組み合わせを保存して再利用できます。</small>
+                  <small class="text-white-50 d-none" data-mode-visible="rough_with_instructions">色とポーズの組み合わせを保存して再利用できます。</small>
+                  <small class="text-white-50 d-none" data-mode-visible="reference_style_colorize">追加指示のテンプレートを保存して再利用できます。</small>
+                  <small class="text-white-50 d-none" data-mode-visible="inpaint_outpaint">編集指示のテンプレートを保存して再利用できます。</small>
                 </div>
                 <span class="badge preset-badge"><i class="bi bi-collection me-1"></i> {{ user_presets|length }} 件</span>
               </div>
@@ -178,7 +180,9 @@
                 <div class="col-md-8 text-md-end">
                   <input type="hidden" name="preset_color" id="preset_color_value" form="presetCreateForm">
                   <input type="hidden" name="preset_pose" id="preset_pose_value" form="presetCreateForm">
-                  <small class="text-white-50 d-block">下の色・ポーズ欄の現在の入力を保存します。</small>
+                  <small class="text-white-50 d-block d-none" data-mode-visible="rough_with_instructions">下の色・ポーズ欄の現在の入力を保存します。</small>
+                  <small class="text-white-50 d-block d-none" data-mode-visible="reference_style_colorize">下の追加指示の現在の入力を保存します。</small>
+                  <small class="text-white-50 d-block d-none" data-mode-visible="inpaint_outpaint">下の追加指示の現在の入力を保存します。</small>
                   <button class="btn btn-primary mt-2" type="submit" form="presetCreateForm"><i class="bi bi-bookmark-plus me-1"></i> プリセット保存</button>
                 </div>
               </div>
@@ -300,7 +304,7 @@
             </div>
 
             <div class="{% if current_mode != 'reference_style_colorize' %}d-none{% endif %} small text-white-50 mt-3" data-mode-visible="reference_style_colorize">
-              <i class="bi bi-info-circle me-1"></i> このモードのプロンプトは暫定的に固定です（完成絵の絵柄を参考にラフを仕上げます）。
+              <i class="bi bi-info-circle me-1"></i> 完成絵の絵柄を参考にラフを仕上げます。追加指示を入力すると反映されます。
             </div>
           </div>
 
@@ -325,6 +329,15 @@
               </div>
               <textarea class="form-control" id="pose_instruction" name="pose_instruction" rows="2" maxlength="1000" data-counter-target="poseCounter">キャラクターは元気にジャンプしているポーズでお願いします。</textarea>
               <div class="form-text text-white-50">推奨: 動き・視線・カメラ距離を記載。</div>
+            </div>
+
+            <div class="{% if current_mode != 'reference_style_colorize' %}d-none{% endif %}" data-mode-visible="reference_style_colorize">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label" for="reference_instruction">追加指示</label>
+                <small id="referenceCounter" class="text-white-50">0/1000</small>
+              </div>
+              <textarea class="form-control" id="reference_instruction" name="reference_instruction" rows="3" maxlength="1000" data-counter-target="referenceCounter" placeholder="例: 彩度は控えめに、背景は薄いグラデーションで"></textarea>
+              <div class="form-text text-white-50">完成絵の絵柄に沿って、仕上げの追加要望を記入してください。</div>
             </div>
 
             <div class="{% if current_mode != 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="inpaint_outpaint">
