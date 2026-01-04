@@ -61,16 +61,10 @@
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <div>
                   <h5 class="mb-0">モード</h5>
-                  <small class="text-white-50" id="modeDescription">
-                    {% for mode in modes %}
-                    {% if mode.id == current_mode %}
-                    {{ mode.description }}
-                    {% endif %}
-                    {% endfor %}
-                  </small>
+                  <small class="text-white-50">タブでモードを切り替えられます。</small>
                 </div>
               </div>
-              <div class="mode-card-group" id="modeCards" role="radiogroup" aria-label="生成モード">
+              <div class="mode-tab-group" id="modeTabs" role="tablist" aria-label="生成モード">
                 {% for mode in modes %}
                 {% if mode.id == 'rough_with_instructions' %}
                 {% set mode_usage = 'ラフから仕上げを指示したいとき' %}
@@ -93,38 +87,68 @@
                 {% set mode_required = '' %}
                 {% set mode_result = '' %}
                 {% endif %}
-                <label class="mode-card {% if mode.id == current_mode %}is-active{% endif %} {% if not mode.enabled %}is-disabled{% endif %}">
-                  <input
-                    type="radio"
-                    name="mode-card"
-                    class="mode-card-input"
-                    data-mode="{{ mode.id }}"
-                    data-mode-description="{{ mode.description }}"
-                    {% if mode.id == current_mode %}checked{% endif %}
-                    {% if not mode.enabled %}disabled aria-disabled="true"{% endif %}
-                  >
-                  <span class="mode-card-body">
-                    <span class="mode-card-header">
-                      <span class="mode-card-title">{{ mode.label }}</span>
-                      {% if not mode.enabled %}<span class="mode-card-badge">準備中</span>{% endif %}
-                    </span>
-                    <span class="mode-card-description">{{ mode.description }}</span>
-                    <span class="mode-card-meta">
-                      <span class="mode-card-row">
-                        <span class="mode-card-label">用途</span>
-                        <span class="mode-card-value">{{ mode_usage }}</span>
-                      </span>
-                      <span class="mode-card-row">
-                        <span class="mode-card-label">必要画像</span>
-                        <span class="mode-card-value">{{ mode_required }}</span>
-                      </span>
-                      <span class="mode-card-row">
-                        <span class="mode-card-label">結果</span>
-                        <span class="mode-card-value">{{ mode_result }}</span>
-                      </span>
-                    </span>
-                  </span>
-                </label>
+                <button
+                  type="button"
+                  class="mode-tab {% if mode.id == current_mode %}is-active{% endif %}"
+                  data-mode="{{ mode.id }}"
+                  data-mode-description="{{ mode.description }}"
+                  data-mode-usage="{{ mode_usage }}"
+                  data-mode-required="{{ mode_required }}"
+                  data-mode-result="{{ mode_result }}"
+                  data-mode-label="{{ mode.label }}"
+                  role="tab"
+                  aria-selected="{{ 'true' if mode.id == current_mode else 'false' }}"
+                  {% if not mode.enabled %}disabled aria-disabled="true"{% endif %}
+                >
+                  <span class="mode-tab-title">{{ mode.label }}</span>
+                  {% if not mode.enabled %}<span class="mode-tab-badge">準備中</span>{% endif %}
+                </button>
+                {% endfor %}
+              </div>
+              <div class="mode-summary-card mt-3" aria-live="polite">
+                {% for mode in modes %}
+                {% if mode.id == current_mode %}
+                {% if mode.id == 'rough_with_instructions' %}
+                {% set mode_usage = 'ラフから仕上げを指示したいとき' %}
+                {% set mode_required = 'ラフスケッチ1枚' %}
+                {% set mode_result = '指示に沿った仕上げイラスト' %}
+                {% elif mode.id == 'reference_style_colorize' %}
+                {% set mode_usage = '完成絵のタッチでラフを仕上げたいとき' %}
+                {% set mode_required = '完成絵1枚＋ラフ1枚' %}
+                {% set mode_result = '参照絵柄に合わせた着色・仕上げ' %}
+                {% elif mode.id == 'inpaint_outpaint' %}
+                {% set mode_usage = '一部修正や余白の拡張をしたいとき' %}
+                {% set mode_required = '編集対象画像1枚（マスク使用）' %}
+                {% set mode_result = '指定範囲のみ修正/拡張' %}
+                {% elif mode.id == 'chat_mode' %}
+                {% set mode_usage = 'テキスト相談や対話しながら生成したいとき' %}
+                {% set mode_required = 'テキスト/画像（チャットで選択）' %}
+                {% set mode_result = 'チャット履歴に沿った応答/生成' %}
+                {% else %}
+                {% set mode_usage = '' %}
+                {% set mode_required = '' %}
+                {% set mode_result = '' %}
+                {% endif %}
+                <div class="mode-summary-header">
+                  <span class="mode-summary-label">現在のモード</span>
+                  <span class="mode-summary-badge" id="modeLabel">{{ mode.label }}</span>
+                </div>
+                <p class="mode-summary-description" id="modeDescription">{{ mode.description }}</p>
+                <div class="mode-summary-grid">
+                  <div>
+                    <span class="mode-summary-label">用途</span>
+                    <span class="mode-summary-value" id="modeUsage">{{ mode_usage }}</span>
+                  </div>
+                  <div>
+                    <span class="mode-summary-label">必要画像</span>
+                    <span class="mode-summary-value" id="modeRequired">{{ mode_required }}</span>
+                  </div>
+                  <div>
+                    <span class="mode-summary-label">結果</span>
+                    <span class="mode-summary-value" id="modeResult">{{ mode_result }}</span>
+                  </div>
+                </div>
+                {% endif %}
                 {% endfor %}
               </div>
             </div>
@@ -138,15 +162,17 @@
             </div>
 
             <div
-              class="preset-panel {% if current_mode != 'rough_with_instructions' %}d-none{% endif %}"
+              class="preset-panel {% if current_mode not in ['rough_with_instructions', 'reference_style_colorize', 'inpaint_outpaint'] %}d-none{% endif %}"
               id="presetPanel"
-              data-mode-visible="rough_with_instructions"
+              data-mode-visible="rough_with_instructions,reference_style_colorize,inpaint_outpaint"
               data-presets='{{ presets_payload | tojson }}'
             >
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <div>
                   <h5 class="mb-0">マイプリセット</h5>
-                  <small class="text-white-50">色とポーズの組み合わせを保存して再利用できます。</small>
+                  <small class="text-white-50 d-none" data-mode-visible="rough_with_instructions">色とポーズの組み合わせを保存して再利用できます。</small>
+                  <small class="text-white-50 d-none" data-mode-visible="reference_style_colorize">追加指示のテンプレートを保存して再利用できます。</small>
+                  <small class="text-white-50 d-none" data-mode-visible="inpaint_outpaint">編集指示のテンプレートを保存して再利用できます。</small>
                 </div>
                 <span class="badge preset-badge"><i class="bi bi-collection me-1"></i> {{ user_presets|length }} 件</span>
               </div>
@@ -178,7 +204,9 @@
                 <div class="col-md-8 text-md-end">
                   <input type="hidden" name="preset_color" id="preset_color_value" form="presetCreateForm">
                   <input type="hidden" name="preset_pose" id="preset_pose_value" form="presetCreateForm">
-                  <small class="text-white-50 d-block">下の色・ポーズ欄の現在の入力を保存します。</small>
+                  <small class="text-white-50 d-block d-none" data-mode-visible="rough_with_instructions">下の色・ポーズ欄の現在の入力を保存します。</small>
+                  <small class="text-white-50 d-block d-none" data-mode-visible="reference_style_colorize">下の追加指示の現在の入力を保存します。</small>
+                  <small class="text-white-50 d-block d-none" data-mode-visible="inpaint_outpaint">下の追加指示の現在の入力を保存します。</small>
                   <button class="btn btn-primary mt-2" type="submit" form="presetCreateForm"><i class="bi bi-bookmark-plus me-1"></i> プリセット保存</button>
                 </div>
               </div>
@@ -198,15 +226,15 @@
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <label class="form-label mb-0" for="reference_image">参考（完成）画像（PNG/JPG/JPEG）</label>
                 </div>
-                <div id="referenceDropzone" class="upload-dropzone">
-                  <div id="referencePlaceholder" class="subtle-text mb-2">参考画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+                <div id="referenceDropzone" class="upload-dropzone" tabindex="0" aria-label="参考画像を貼り付けできます">
+                  <div id="referencePlaceholder" class="subtle-text mb-2">参考画像をドラッグ＆ドロップ、貼り付け、または下のボタンから選択</div>
                   <img id="referencePreviewImage" class="preview-image d-none mb-2" alt="参考画像プレビュー">
                   <div id="referenceFileMeta" class="small text-white-50 mb-2"></div>
                   <div class="upload-status small mb-1">
                     <i class="bi bi-circle-fill upload-status-icon" id="referenceStatusIcon" aria-hidden="true"></i>
                     <span id="referenceStatusText">未選択</span>
                   </div>
-                  <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上</div>
+                  <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上（コピー＆ペースト対応）</div>
                   <div class="d-flex justify-content-center gap-2">
                     <label class="btn btn-outline-light btn-sm" for="reference_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
                     <button class="btn btn-outline-light btn-sm" type="button" id="referenceClearImage" aria-label="参考画像をクリア"><i class="bi bi-x-lg"></i></button>
@@ -219,15 +247,15 @@
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <label class="form-label mb-0" for="rough_image">ラフスケッチ（PNG/JPG/JPEG）</label>
                 </div>
-                <div id="roughDropzone" class="upload-dropzone">
-                  <div id="roughPlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+                <div id="roughDropzone" class="upload-dropzone" tabindex="0" aria-label="ラフ画像を貼り付けできます">
+                  <div id="roughPlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、貼り付け、または下のボタンから選択</div>
                   <img id="roughPreviewImage" class="preview-image d-none mb-2" alt="ラフ画像プレビュー">
                   <div id="roughFileMeta" class="small text-white-50 mb-2"></div>
                   <div class="upload-status small mb-1">
                     <i class="bi bi-circle-fill upload-status-icon" id="roughStatusIcon" aria-hidden="true"></i>
                     <span id="roughStatusText">未選択</span>
                   </div>
-                  <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上</div>
+                  <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上（コピー＆ペースト対応）</div>
                   <div class="d-flex justify-content-center gap-2">
                     <label class="btn btn-outline-light btn-sm" for="rough_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
                     <button class="btn btn-outline-light btn-sm" type="button" id="roughClearImage" aria-label="ラフ画像をクリア"><i class="bi bi-x-lg"></i></button>
@@ -248,15 +276,15 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label mb-0" for="edit_base_image">編集対象画像（PNG/JPG/JPEG）</label>
-                  <div id="editBaseDropzone" class="upload-dropzone mt-2">
-                    <div id="editBasePlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+                  <div id="editBaseDropzone" class="upload-dropzone mt-2" tabindex="0" aria-label="編集対象画像を貼り付けできます">
+                    <div id="editBasePlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、貼り付け、または下のボタンから選択</div>
                     <img id="editBasePreviewImage" class="preview-image d-none mb-2" alt="編集対象画像プレビュー">
                     <div id="editBaseFileMeta" class="small text-white-50 mb-2"></div>
                     <div class="upload-status small mb-1">
                       <i class="bi bi-circle-fill upload-status-icon" id="editBaseStatusIcon" aria-hidden="true"></i>
                       <span id="editBaseStatusText">未選択</span>
                     </div>
-                    <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上</div>
+                    <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上（コピー＆ペースト対応）</div>
                     <div class="d-flex justify-content-center gap-2">
                       <label class="btn btn-outline-light btn-sm" for="edit_base_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
                       <button class="btn btn-outline-light btn-sm" type="button" id="editBaseClearImage" aria-label="編集対象画像をクリア"><i class="bi bi-x-lg"></i></button>
@@ -300,7 +328,7 @@
             </div>
 
             <div class="{% if current_mode != 'reference_style_colorize' %}d-none{% endif %} small text-white-50 mt-3" data-mode-visible="reference_style_colorize">
-              <i class="bi bi-info-circle me-1"></i> このモードのプロンプトは暫定的に固定です（完成絵の絵柄を参考にラフを仕上げます）。
+              <i class="bi bi-info-circle me-1"></i> 完成絵の絵柄を参考にラフを仕上げます。追加指示を入力すると反映されます。
             </div>
           </div>
 
@@ -325,6 +353,15 @@
               </div>
               <textarea class="form-control" id="pose_instruction" name="pose_instruction" rows="2" maxlength="1000" data-counter-target="poseCounter">キャラクターは元気にジャンプしているポーズでお願いします。</textarea>
               <div class="form-text text-white-50">推奨: 動き・視線・カメラ距離を記載。</div>
+            </div>
+
+            <div class="{% if current_mode != 'reference_style_colorize' %}d-none{% endif %}" data-mode-visible="reference_style_colorize">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label" for="reference_instruction">追加指示</label>
+                <small id="referenceCounter" class="text-white-50">0/1000</small>
+              </div>
+              <textarea class="form-control" id="reference_instruction" name="reference_instruction" rows="3" maxlength="1000" data-counter-target="referenceCounter" placeholder="例: 彩度は控えめに、背景は薄いグラデーションで"></textarea>
+              <div class="form-text text-white-50">完成絵の絵柄に沿って、仕上げの追加要望を記入してください。</div>
             </div>
 
             <div class="{% if current_mode != 'inpaint_outpaint' %}d-none{% endif %}" data-mode-visible="inpaint_outpaint">

@@ -124,6 +124,20 @@ const bindImageUploader = (config) => {
     reader.readAsDataURL(file);
   };
 
+  const handlePaste = (event) => {
+    if (!event.clipboardData) return;
+    const items = Array.from(event.clipboardData.items || []);
+    const imageItem = items.find((item) => item.type && item.type.startsWith('image/'));
+    if (!imageItem) return;
+    const file = imageItem.getAsFile();
+    if (!file) return;
+    event.preventDefault();
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+    handleFile(file);
+  };
+
   clearButton.addEventListener('click', resetPreview);
 
   fileInput.addEventListener('change', (event) => {
@@ -151,6 +165,12 @@ const bindImageUploader = (config) => {
     fileInput.files = event.dataTransfer.files;
     handleFile(file);
   });
+
+  dropzone.addEventListener('click', () => {
+    dropzone.focus();
+  });
+
+  dropzone.addEventListener('paste', handlePaste);
 
   return { resetPreview, dropzoneStatus };
 };
@@ -246,12 +266,16 @@ const MODE_SUBMIT_LABELS = {
 };
 
 const initModeSwitch = (uploaders) => {
-  const modeCards = document.getElementById('modeCards');
+  const modeTabs = document.getElementById('modeTabs');
   const modeInput = document.getElementById('generationModeInput');
   const modeDescription = document.getElementById('modeDescription');
+  const modeLabel = document.getElementById('modeLabel');
+  const modeUsage = document.getElementById('modeUsage');
+  const modeRequired = document.getElementById('modeRequired');
+  const modeResult = document.getElementById('modeResult');
   const submitLabel = document.getElementById('submitLabel');
 
-  if (!modeCards || !modeInput) return;
+  if (!modeTabs || !modeInput) return;
 
   const splitModes = (raw) =>
     String(raw || '')
@@ -283,12 +307,11 @@ const initModeSwitch = (uploaders) => {
       input.value = modeId;
     });
 
-    const inputs = modeCards.querySelectorAll('input[data-mode]');
-    inputs.forEach((input) => {
-      const isActive = input.dataset.mode === modeId;
-      input.checked = isActive;
-      const card = input.closest('.mode-card');
-      if (card) card.classList.toggle('is-active', isActive);
+    const tabs = modeTabs.querySelectorAll('[data-mode]');
+    tabs.forEach((tab) => {
+      const isActive = tab.dataset.mode === modeId;
+      tab.classList.toggle('is-active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
     toggleVisibility(modeId);
@@ -297,9 +320,13 @@ const initModeSwitch = (uploaders) => {
       submitLabel.textContent = MODE_SUBMIT_LABELS[modeId];
     }
 
-    const activeInput = modeCards.querySelector(`input[data-mode="${modeId}"]`);
-    const description = activeInput ? activeInput.dataset.modeDescription : '';
+    const activeTab = modeTabs.querySelector(`[data-mode="${modeId}"]`);
+    const description = activeTab ? activeTab.dataset.modeDescription : '';
     if (modeDescription) modeDescription.textContent = description || '';
+    if (modeLabel) modeLabel.textContent = activeTab ? activeTab.dataset.modeLabel || '' : '';
+    if (modeUsage) modeUsage.textContent = activeTab ? activeTab.dataset.modeUsage || '' : '';
+    if (modeRequired) modeRequired.textContent = activeTab ? activeTab.dataset.modeRequired || '' : '';
+    if (modeResult) modeResult.textContent = activeTab ? activeTab.dataset.modeResult || '' : '';
 
     if (uploaders && uploaders.reference && modeId !== 'reference_style_colorize') {
       uploaders.reference.resetPreview();
@@ -320,10 +347,10 @@ const initModeSwitch = (uploaders) => {
     if (updateUrl) setModeInUrl(modeId);
   };
 
-  modeCards.querySelectorAll('input[data-mode]').forEach((input) => {
-    input.addEventListener('change', () => {
-      if (input.disabled) return;
-      applyMode(input.dataset.mode);
+  modeTabs.querySelectorAll('[data-mode]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      if (tab.disabled) return;
+      applyMode(tab.dataset.mode);
     });
   });
 
@@ -369,8 +396,15 @@ const initPresets = () => {
   const presetPoseInput = document.getElementById('preset_pose_value');
   const colorTextarea = document.getElementById('color_instruction');
   const poseTextarea = document.getElementById('pose_instruction');
+  const referenceTextarea = document.getElementById('reference_instruction');
+  const editTextarea = document.getElementById('edit_instruction');
+  const modeInput = document.getElementById('generationModeInput');
 
-  if (!panel || !presetSelect || !deletePresetId || !applyButton || !presetCreateForm || !presetColorInput || !presetPoseInput || !colorTextarea || !poseTextarea) {
+  if (!panel || !presetSelect || !deletePresetId || !applyButton || !presetCreateForm || !presetColorInput || !presetPoseInput || !modeInput) {
+    return;
+  }
+
+  if (!colorTextarea && !poseTextarea && !referenceTextarea && !editTextarea) {
     return;
   }
 
@@ -384,14 +418,30 @@ const initPresets = () => {
 
   const findPreset = (presetId) => presets.find((preset) => String(preset.id) === String(presetId));
 
+  const getModeFields = (modeId) => {
+    if (modeId === 'reference_style_colorize') {
+      return { primary: referenceTextarea, secondary: null };
+    }
+    if (modeId === 'inpaint_outpaint') {
+      return { primary: editTextarea, secondary: null };
+    }
+    return { primary: colorTextarea, secondary: poseTextarea };
+  };
+
   const applyPreset = () => {
     const selected = findPreset(presetSelect.value);
     if (!selected) return;
 
-    colorTextarea.value = selected.color || '';
-    poseTextarea.value = selected.pose || '';
-    colorTextarea.dispatchEvent(new Event('input'));
-    poseTextarea.dispatchEvent(new Event('input'));
+    const modeId = modeInput.value;
+    const { primary, secondary } = getModeFields(modeId);
+    if (!primary) return;
+
+    primary.value = selected.color || '';
+    primary.dispatchEvent(new Event('input'));
+    if (secondary) {
+      secondary.value = selected.pose || '';
+      secondary.dispatchEvent(new Event('input'));
+    }
   };
 
   const syncDeleteField = () => {
@@ -404,8 +454,11 @@ const initPresets = () => {
 
   presetCreateForm.addEventListener('submit', () => {
     // 現在のテキストエリア内容をプリセットとして保存する
-    presetColorInput.value = colorTextarea.value;
-    presetPoseInput.value = poseTextarea.value;
+    const modeId = modeInput.value;
+    const { primary, secondary } = getModeFields(modeId);
+    if (!primary) return;
+    presetColorInput.value = primary.value;
+    presetPoseInput.value = secondary ? secondary.value : '';
   });
 };
 
