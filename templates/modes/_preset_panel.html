@@ -1,0 +1,44 @@
+<div class="section-card">
+  <div class="section-header">
+    <h5 class="section-title mb-1">マイプリセット</h5>
+    <p class="section-description mb-0">{{ preset_detail }}</p>
+  </div>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <small class="text-white-50">保存済みプリセットを選んで入力に反映できます。</small>
+    </div>
+    <span class="badge preset-badge"><i class="bi bi-collection me-1"></i> {{ user_presets|length }} 件</span>
+  </div>
+  <div class="row g-2 align-items-end mb-2">
+    <div class="col-md-8">
+      <label class="form-label" for="presetSelect">保存済みプリセット</label>
+      <select class="form-select" id="presetSelect">
+        <option value="">プリセットを選択</option>
+        {% for preset in user_presets %}
+        <option value="{{ preset.id }}">{{ preset.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 preset-actions d-grid d-md-flex gap-2">
+      <button class="btn btn-outline-light flex-grow-1" type="button" id="applyPreset"><i class="bi bi-arrow-down-circle me-1"></i> 読込</button>
+      <div class="flex-grow-1">
+        <input type="hidden" name="preset_id" id="deletePresetId" form="deletePresetForm">
+        <input type="hidden" name="mode" value="{{ current_mode }}" form="deletePresetForm">
+        <button class="btn btn-outline-danger w-100" type="submit" form="deletePresetForm"><i class="bi bi-trash3 me-1"></i> 削除</button>
+      </div>
+    </div>
+  </div>
+  <div class="row gy-2 gx-3 align-items-end">
+    <input type="hidden" name="mode" value="{{ current_mode }}" form="presetCreateForm">
+    <div class="col-md-4">
+      <label class="form-label" for="preset_name">プリセット名</label>
+      <input class="form-control" type="text" id="preset_name" name="preset_name" maxlength="80" placeholder="例: 夕焼け元気" form="presetCreateForm">
+    </div>
+    <div class="col-md-8 text-md-end">
+      <input type="hidden" name="preset_color" id="preset_color_value" form="presetCreateForm">
+      <input type="hidden" name="preset_pose" id="preset_pose_value" form="presetCreateForm">
+      <small class="text-white-50 d-block">{{ preset_save_hint }}</small>
+      <button class="btn btn-primary mt-2" type="submit" form="presetCreateForm"><i class="bi bi-bookmark-plus me-1"></i> プリセット保存</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,135 @@
+{% extends 'modes/base.html' %}
+{% block form_body %}
+<form method="post" action="{{ url_for('main.delete_preset') }}" id="deletePresetForm"></form>
+<form method="post" action="{{ url_for('main.create_preset') }}" id="presetCreateForm"></form>
+
+<form id="generateForm" method="post" action="{{ url_for('main.generate_edit') }}" enctype="multipart/form-data" class="d-flex flex-column gap-3">
+  <input type="hidden" name="mode" id="generationModeInput" value="{{ current_mode }}">
+
+  {% include 'modes/_mode_summary.html' %}
+  {% include 'modes/_preset_panel.html' %}
+
+  <div class="section-card">
+    <div class="section-header">
+      <h5 class="section-title mb-1">編集用画像</h5>
+      <p class="section-description mb-0">編集対象画像を追加し、マスクはエディタで描画します。</p>
+    </div>
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div>
+        <small class="text-white-50">マスクはエディタで描画して適用します。</small>
+      </div>
+      <button class="btn btn-outline-light btn-sm" type="button" id="openMaskEditorButton"><i class="bi bi-brush me-1"></i> エディタを開く</button>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label mb-0" for="edit_base_image">編集対象画像（PNG/JPG/JPEG）</label>
+        <div id="editBaseDropzone" class="upload-dropzone mt-2">
+          <div id="editBasePlaceholder" class="subtle-text mb-2">画像をドラッグ＆ドロップ、または下のボタンから選択</div>
+          <img id="editBasePreviewImage" class="preview-image d-none mb-2" alt="編集対象画像プレビュー">
+          <div id="editBaseFileMeta" class="small text-white-50 mb-2"></div>
+          <div class="upload-status small mb-1">
+            <i class="bi bi-circle-fill upload-status-icon" id="editBaseStatusIcon" aria-hidden="true"></i>
+            <span id="editBaseStatusText">未選択</span>
+          </div>
+          <div class="upload-help small text-white-50 mb-2">許容拡張子: PNG/JPG/JPEG・推奨サイズ: 長辺1024px以上</div>
+          <div class="d-flex justify-content-center gap-2">
+            <label class="btn btn-outline-light btn-sm" for="edit_base_image"><i class="bi bi-folder2-open me-1"></i> ファイルを選択</label>
+            <button class="btn btn-outline-light btn-sm" type="button" id="editBaseClearImage" aria-label="編集対象画像をクリア"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </div>
+        <input class="visually-hidden" type="file" id="edit_base_image" name="edit_base_image" accept="image/png, image/jpeg">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label mb-0">マスクプレビュー</label>
+        <div id="editMaskDropzone" class="upload-dropzone mt-2">
+          <div id="editMaskPlaceholder" class="subtle-text mb-2">エディタで作成したマスクがここに表示されます</div>
+          <img id="editMaskPreviewImage" class="preview-image d-none mb-2" alt="マスク画像プレビュー">
+          <div id="editMaskFileMeta" class="small text-white-50 mb-2"></div>
+          <div class="upload-status small mb-1">
+            <i class="bi bi-circle-fill upload-status-icon" id="editMaskStatusIcon" aria-hidden="true"></i>
+            <span id="editMaskStatusText">未選択</span>
+          </div>
+          <div class="upload-help small text-white-50">許容拡張子: PNG（エディタ生成）・推奨サイズ: 編集対象と同じ</div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+      <div class="btn-group" role="group" aria-label="編集モード">
+        <button type="button" class="btn btn-outline-light active" data-edit-mode="inpaint">インペイント</button>
+        <button type="button" class="btn btn-outline-light" data-edit-mode="outpaint">アウトペイント</button>
+      </div>
+      <input type="hidden" name="edit_mode" id="editModeInput" value="inpaint">
+    </div>
+    <div id="outpaintControls" class="mt-2 d-none">
+      <label class="form-label mb-1" for="outpaintScale">拡張倍率</label>
+      <select class="form-select" id="outpaintScale" name="outpaint_scale">
+        <option value="1.2">1.2x</option>
+        <option value="1.4">1.4x</option>
+        <option value="1.6">1.6x</option>
+        <option value="2.0">2.0x</option>
+      </select>
+      <small class="text-white-50 d-block mt-1">キャンバスを拡張し、拡張領域を自動マスクします。</small>
+    </div>
+    <input type="hidden" name="edit_mask_data" id="editMaskData">
+    <input type="hidden" name="edit_base_data" id="editBaseData">
+  </div>
+
+  <div class="section-card">
+    <div class="section-header">
+      <h5 class="section-title mb-1">指示入力</h5>
+      <p class="section-description mb-0">編集内容や追加要望を記入します。</p>
+    </div>
+    <div>
+      <label class="form-label" for="edit_instruction">追加指示</label>
+      <textarea class="form-control" id="edit_instruction" name="edit_instruction" rows="3" maxlength="1000" placeholder="例: マスク領域に花柄を追加"></textarea>
+      <div class="form-text text-white-50">指定がない限り構図・色味・絵柄は維持されます。</div>
+    </div>
+  </div>
+
+  <div class="d-grid d-md-flex align-items-center gap-3">
+    <button class="btn btn-primary flex-grow-1" id="generateButton" type="submit">
+      <span class="spinner-border spinner-border-sm me-2 d-none" id="loadingSpinner" aria-hidden="true"></span>
+      <span id="submitLabel">{{ submit_label }}</span>
+    </button>
+    <div class="text-white-50 small"><i class="bi bi-lightbulb me-1"></i> 送信中はボタンが無効化されます。</div>
+  </div>
+</form>
+{% endblock %}
+
+{% block modal %}
+<div class="modal fade" id="maskEditorModal" tabindex="-1" aria-labelledby="maskEditorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content glass-card">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="maskEditorLabel">マスクエディタ</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-lg-9">
+            <div class="editor-canvas-wrap">
+              <canvas id="maskEditorBaseCanvas" class="editor-canvas"></canvas>
+              <canvas id="maskEditorMaskCanvas" class="editor-canvas editor-mask"></canvas>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="editor-tools">
+              <label class="form-label">ブラシサイズ</label>
+              <input type="range" class="form-range" id="maskBrushSize" min="4" max="120" value="28">
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-light" id="maskEraserToggle"><i class="bi bi-eraser me-1"></i> 消しゴム</button>
+                <button type="button" class="btn btn-outline-light" id="maskResetButton"><i class="bi bi-arrow-counterclockwise me-1"></i> リセット</button>
+              </div>
+              <div class="small text-white-50 mt-3">赤く塗った領域が編集対象になります。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">閉じる</button>
+        <button type="button" class="btn btn-primary" id="maskApplyButton">マスクを適用</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
