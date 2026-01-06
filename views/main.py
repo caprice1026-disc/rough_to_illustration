@@ -24,6 +24,7 @@ from services.modes import (
     MODE_CHAT,
     MODE_INPAINT_OUTPAINT,
     MODE_REFERENCE_STYLE_COLORIZE,
+    MODE_ROUGH_WITH_INSTRUCTIONS,
     normalize_mode_id,
 )
 
@@ -32,6 +33,12 @@ main_bp = Blueprint("main", __name__)
 
 ASPECT_RATIO_OPTIONS = ["auto", "1:1", "4:5", "16:9"]
 RESOLUTION_OPTIONS = ["auto", "1K", "2K", "4K"]
+MODE_ROUTE_MAP = {
+    MODE_ROUGH_WITH_INSTRUCTIONS.id: "main.generate_rough",
+    MODE_REFERENCE_STYLE_COLORIZE.id: "main.generate_reference",
+    MODE_INPAINT_OUTPAINT.id: "main.generate_edit",
+    MODE_CHAT.id: "chat.index",
+}
 
 
 def _restore_result() -> Optional[str]:
@@ -55,73 +62,8 @@ def _fetch_presets() -> list[IllustrationPreset]:
         .all()
     )
 
-
-@main_bp.route("/", methods=["GET", "POST"])
-@login_required
-def index():
-    image_data: Optional[str] = None
-    current_mode = normalize_mode_id(request.form.get("mode") or request.args.get("mode"))
-
-    if request.method == "POST":
-        aspect_ratio_label = request.form.get("aspect_ratio") or "auto"
-        resolution_label = request.form.get("resolution") or "auto"
-
-        try:
-            if current_mode == MODE_CHAT.id:
-                return redirect(url_for("chat.index"))
-            if current_mode == MODE_REFERENCE_STYLE_COLORIZE.id:
-                reference_file = request.files.get("reference_image")
-                rough_file = request.files.get("rough_image")
-                reference_instruction = request.form.get("reference_instruction", "")
-                result = run_generation_with_reference(
-                    reference_file=reference_file,
-                    rough_file=rough_file,
-                    reference_instruction=reference_instruction,
-                    aspect_ratio_label=aspect_ratio_label,
-                    resolution_label=resolution_label,
-                )
-            elif current_mode == MODE_INPAINT_OUTPAINT.id:
-                base_file = request.files.get("edit_base_image")
-                base_data = request.form.get("edit_base_data", "")
-                mask_data = request.form.get("edit_mask_data", "")
-                edit_mode = request.form.get("edit_mode", "inpaint")
-                edit_instruction = request.form.get("edit_instruction", "")
-                result = run_edit_generation(
-                    base_file=base_file,
-                    base_data=base_data,
-                    mask_data=mask_data,
-                    edit_mode=edit_mode,
-                    edit_instruction=edit_instruction,
-                )
-            else:
-                file = request.files.get("rough_image")
-                color_instruction = request.form.get("color_instruction", "")
-                pose_instruction = request.form.get("pose_instruction", "")
-                result = run_generation(
-                    file=file,
-                    color_instruction=color_instruction,
-                    pose_instruction=pose_instruction,
-                    aspect_ratio_label=aspect_ratio_label,
-                    resolution_label=resolution_label,
-                )
-        except GenerationError as exc:
-            flash(str(exc), "error")
-        except MissingApiKeyError:
-            current_app.logger.error("Missing API key for image generation.")
-            flash("APIキーが設定されていません。", "error")
-        except Exception as exc:  # noqa: BLE001
-            current_app.logger.exception("Image generation failed: %s", exc)
-            flash("画像生成に失敗しました。しばらくしてから再試行してください。", "error")
-        else:
-            save_result_to_session(result)
-            image_data = result.image_data_uri
-            flash("イラストの生成が完了しました。", "success")
-
-    if not image_data:
-        image_data = _restore_result()
-
-    user_presets = _fetch_presets()
-    presets_payload = [
+def _build_presets_payload(user_presets: list[IllustrationPreset]) -> list[dict[str, str]]:
+    return [
         {
             "id": preset.id,
             "name": preset.name,
@@ -131,16 +73,185 @@ def index():
         for preset in user_presets
     ]
 
-    return render_template(
-        "index.html",
-        image_data=image_data,
-        modes=ALL_MODES,
-        current_mode=current_mode,
-        aspect_ratio_options=ASPECT_RATIO_OPTIONS,
-        resolution_options=RESOLUTION_OPTIONS,
-        user_presets=user_presets,
-        presets_payload=presets_payload,
+
+def _mode_url_map() -> dict[str, str]:
+    return {mode_id: url_for(endpoint) for mode_id, endpoint in MODE_ROUTE_MAP.items()}
+
+
+def _resolve_mode_endpoint(mode_id: Optional[str]) -> str:
+    normalized = normalize_mode_id(mode_id)
+    return MODE_ROUTE_MAP.get(normalized, MODE_ROUTE_MAP[MODE_ROUGH_WITH_INSTRUCTIONS.id])
+
+
+def _redirect_to_mode(mode_id: Optional[str]):
+    return redirect(url_for(_resolve_mode_endpoint(mode_id)))
+
+
+def _build_common_context(current_mode: str, image_data: Optional[str]) -> dict[str, object]:
+    user_presets = _fetch_presets()
+    return {
+        "image_data": image_data,
+        "modes": ALL_MODES,
+        "current_mode": current_mode,
+        "aspect_ratio_options": ASPECT_RATIO_OPTIONS,
+        "resolution_options": RESOLUTION_OPTIONS,
+        "user_presets": user_presets,
+        "presets_payload": _build_presets_payload(user_presets),
+        "mode_routes": _mode_url_map(),
+    }
+
+
+def _handle_generation_error(exc: Exception) -> None:
+    if isinstance(exc, GenerationError):
+        flash(str(exc), "error")
+        return
+    if isinstance(exc, MissingApiKeyError):
+        current_app.logger.error("Missing API key for image generation.")
+        flash("APIキーが設定されていません。", "error")
+        return
+    current_app.logger.exception("Image generation failed: %s", exc)
+    flash("画像生成に失敗しました。しばらくしてから再試行してください。", "error")
+
+
+@main_bp.route("/", methods=["GET"])
+@login_required
+def index():
+    return _redirect_to_mode(MODE_ROUGH_WITH_INSTRUCTIONS.id)
+
+
+@main_bp.route("/generate/rough", methods=["GET", "POST"])
+@login_required
+def generate_rough():
+    image_data: Optional[str] = None
+    current_mode = MODE_ROUGH_WITH_INSTRUCTIONS.id
+
+    if request.method == "POST":
+        aspect_ratio_label = request.form.get("aspect_ratio") or "auto"
+        resolution_label = request.form.get("resolution") or "auto"
+        file = request.files.get("rough_image")
+        color_instruction = request.form.get("color_instruction", "")
+        pose_instruction = request.form.get("pose_instruction", "")
+
+        try:
+            result = run_generation(
+                file=file,
+                color_instruction=color_instruction,
+                pose_instruction=pose_instruction,
+                aspect_ratio_label=aspect_ratio_label,
+                resolution_label=resolution_label,
+            )
+        except Exception as exc:  # noqa: BLE001
+            _handle_generation_error(exc)
+        else:
+            save_result_to_session(result)
+            image_data = result.image_data_uri
+            flash("イラストの生成が完了しました。", "success")
+
+    if not image_data:
+        image_data = _restore_result()
+
+    context = _build_common_context(current_mode, image_data)
+    context.update(
+        {
+            "hero_title": "ラフ絵を高品質イラストへ",
+            "hero_subtitle": "ラフ1枚と色・ポーズ指示で、Gemini に仕上げを依頼します。プレビューで確認しながら安心して送信できます。",
+            "submit_label": "イラスト生成をリクエスト",
+            "preset_detail": "色とポーズの組み合わせを保存して再利用できます。",
+            "preset_save_hint": "下の色・ポーズ欄の現在の入力を保存します。",
+            "empty_hint": "ラフスケッチをアップロードして「イラスト生成」を押すと、ここにプレビューが表示されます。",
+        }
     )
+    return render_template("modes/rough.html", **context)
+
+
+@main_bp.route("/generate/reference", methods=["GET", "POST"])
+@login_required
+def generate_reference():
+    image_data: Optional[str] = None
+    current_mode = MODE_REFERENCE_STYLE_COLORIZE.id
+
+    if request.method == "POST":
+        aspect_ratio_label = request.form.get("aspect_ratio") or "auto"
+        resolution_label = request.form.get("resolution") or "auto"
+        reference_file = request.files.get("reference_image")
+        rough_file = request.files.get("rough_image")
+        reference_instruction = request.form.get("reference_instruction", "")
+
+        try:
+            result = run_generation_with_reference(
+                reference_file=reference_file,
+                rough_file=rough_file,
+                reference_instruction=reference_instruction,
+                aspect_ratio_label=aspect_ratio_label,
+                resolution_label=resolution_label,
+            )
+        except Exception as exc:  # noqa: BLE001
+            _handle_generation_error(exc)
+        else:
+            save_result_to_session(result)
+            image_data = result.image_data_uri
+            flash("イラストの生成が完了しました。", "success")
+
+    if not image_data:
+        image_data = _restore_result()
+
+    context = _build_common_context(current_mode, image_data)
+    context.update(
+        {
+            "hero_title": "完成絵の絵柄でラフを着色",
+            "hero_subtitle": "完成済みイラストとラフスケッチの2枚を使って、参照絵柄に沿った仕上げを依頼します。",
+            "submit_label": "参照して着色をリクエスト",
+            "preset_detail": "追加指示のテンプレートを保存して再利用できます。",
+            "preset_save_hint": "下の追加指示の現在の入力を保存します。",
+            "empty_hint": "参考（完成）画像とラフスケッチをアップロードして「参照して着色」を押すと、ここにプレビューが表示されます。",
+        }
+    )
+    return render_template("modes/reference.html", **context)
+
+
+@main_bp.route("/generate/edit", methods=["GET", "POST"])
+@login_required
+def generate_edit():
+    image_data: Optional[str] = None
+    current_mode = MODE_INPAINT_OUTPAINT.id
+
+    if request.method == "POST":
+        base_file = request.files.get("edit_base_image")
+        base_data = request.form.get("edit_base_data", "")
+        mask_data = request.form.get("edit_mask_data", "")
+        edit_mode = request.form.get("edit_mode", "inpaint")
+        edit_instruction = request.form.get("edit_instruction", "")
+
+        try:
+            result = run_edit_generation(
+                base_file=base_file,
+                base_data=base_data,
+                mask_data=mask_data,
+                edit_mode=edit_mode,
+                edit_instruction=edit_instruction,
+            )
+        except Exception as exc:  # noqa: BLE001
+            _handle_generation_error(exc)
+        else:
+            save_result_to_session(result)
+            image_data = result.image_data_uri
+            flash("イラストの生成が完了しました。", "success")
+
+    if not image_data:
+        image_data = _restore_result()
+
+    context = _build_common_context(current_mode, image_data)
+    context.update(
+        {
+            "hero_title": "インペイント/アウトペイント編集",
+            "hero_subtitle": "編集対象画像とマスクを使い、指定領域だけを修正または拡張します。",
+            "submit_label": "編集をリクエスト",
+            "preset_detail": "編集指示のテンプレートを保存して再利用できます。",
+            "preset_save_hint": "下の追加指示の現在の入力を保存します。",
+            "empty_hint": "編集対象画像をアップロードしてマスクを描き、「編集をリクエスト」を押すと、ここにプレビューが表示されます。",
+        }
+    )
+    return render_template("modes/edit.html", **context)
 
 
 @main_bp.route("/modes")
@@ -153,6 +264,7 @@ def mode_select():
         "mode_select.html",
         modes=ALL_MODES,
         current_mode=current_mode,
+        mode_routes=_mode_url_map(),
     )
 
 
@@ -184,28 +296,28 @@ def create_preset():
 
     if not name:
         flash("プリセット名を入力してください。", "error")
-        return redirect(url_for("main.index", mode=mode))
+        return _redirect_to_mode(mode)
 
     if len(name) > 80:
         flash("プリセット名は80文字以内にしてください。", "error")
-        return redirect(url_for("main.index", mode=mode))
+        return _redirect_to_mode(mode)
 
     if mode in {MODE_REFERENCE_STYLE_COLORIZE.id, MODE_INPAINT_OUTPAINT.id}:
         if not color_instruction:
             flash("追加指示を入力してください。", "error")
-            return redirect(url_for("main.index", mode=mode))
+            return _redirect_to_mode(mode)
         pose_instruction = ""
         if len(color_instruction) > 1000:
             flash("文字数上限を超えています。入力内容を短くしてください。", "error")
-            return redirect(url_for("main.index", mode=mode))
+            return _redirect_to_mode(mode)
     else:
         if not color_instruction or not pose_instruction:
             flash("色とポーズの指示を両方入力してください。", "error")
-            return redirect(url_for("main.index", mode=mode))
+            return _redirect_to_mode(mode)
 
         if len(color_instruction) > 200 or len(pose_instruction) > 160:
             flash("文字数上限を超えています。入力内容を短くしてください。", "error")
-            return redirect(url_for("main.index", mode=mode))
+            return _redirect_to_mode(mode)
 
     preset = IllustrationPreset(
         user_id=current_user.id,
@@ -216,7 +328,7 @@ def create_preset():
     db.session.add(preset)
     db.session.commit()
     flash("プリセットを保存しました。", "success")
-    return redirect(url_for("main.index", mode=mode))
+    return _redirect_to_mode(mode)
 
 
 @main_bp.route("/presets/delete", methods=["POST"])
@@ -228,16 +340,16 @@ def delete_preset():
     preset_id = request.form.get("preset_id", type=int)
     if not preset_id:
         flash("削除するプリセットを選択してください。", "error")
-        return redirect(url_for("main.index", mode=mode))
+        return _redirect_to_mode(mode)
 
     preset = IllustrationPreset.query.filter_by(
         id=preset_id, user_id=current_user.id
     ).first()
     if not preset:
         flash("指定されたプリセットが見つかりません。", "error")
-        return redirect(url_for("main.index", mode=mode))
+        return _redirect_to_mode(mode)
 
     db.session.delete(preset)
     db.session.commit()
     flash("プリセットを削除しました。", "info")
-    return redirect(url_for("main.index", mode=mode))
+    return _redirect_to_mode(mode)

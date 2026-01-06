@@ -39,11 +39,7 @@
       {% set mode_required = '' %}
       {% set mode_result = '' %}
       {% endif %}
-      {% if mode.id == 'chat_mode' %}
-      {% set mode_url = url_for('chat.index') %}
-      {% else %}
-      {% set mode_url = url_for('main.index', mode=mode.id) %}
-      {% endif %}
+      {% set mode_url = mode_routes.get(mode.id, url_for('main.index')) %}
       {% if mode.enabled %}
       <a class="mode-card {% if mode.id == current_mode %}is-active{% endif %}" href="{{ mode_url }}">
       {% else %}

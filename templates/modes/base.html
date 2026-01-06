@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+
+<div class="row align-items-center g-4 mb-4">
+  <div class="col-lg-12">
+    <h1 class="hero-title mb-2">{{ hero_title }}</h1>
+    <p class="subtle-text mb-3">{{ hero_subtitle }}</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card glass-card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="card-title mb-0">生成リクエスト</h2>
+          <span class="option-chip"><i class="bi bi-pencil-square"></i> ファイル/指示入力</span>
+        </div>
+        {% block form_body %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    {% include 'modes/_result_panel.html' %}
+  </div>
+</div>
+
+{% block modal %}{% endblock %}
+<script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
+{% endblock %}
