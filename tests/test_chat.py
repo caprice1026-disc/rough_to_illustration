@@ -35,15 +35,14 @@ def client(app):
 
 def login(client):
     return client.post(
-        "/login",
-        data={"username": "tester", "password": "password123"},
-        follow_redirects=True,
+        "/api/auth/login",
+        json={"username": "tester", "password": "password123"},
     )
 
 
 def test_chat_page_creates_session(client, app):
     login(client)
-    response = client.get("/chat")
+    response = client.get("/api/chat/sessions")
     assert response.status_code == 200
 
     with app.app_context():
@@ -56,7 +55,7 @@ def test_index_page_loads_for_logged_in_user(client):
     login(client)
     response = client.get("/")
     assert response.status_code == 200
-    assert "生成リクエスト" in response.get_data(as_text=True)
+    assert "static/spa/app.js" in response.get_data(as_text=True)
 
 
 def test_text_chat_persists_messages(client, app, monkeypatch):
@@ -68,10 +67,10 @@ def test_text_chat_persists_messages(client, app, monkeypatch):
         db.session.commit()
         session_id = session.id
 
-    monkeypatch.setattr("views.chat.generate_text_reply", lambda *_: "テスト応答")
+    monkeypatch.setattr("services.chat_service.generate_text_reply", lambda *_: "テスト応答")
 
     response = client.post(
-        "/chat/messages",
+        "/api/chat/messages",
         data={"session_id": session_id, "mode_id": "text_chat", "message": "こんにちは"},
     )
     assert response.status_code == 200

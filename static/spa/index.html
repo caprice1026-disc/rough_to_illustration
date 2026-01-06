@@ -1,0 +1,313 @@
+﻿<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ラフ絵 to イラスト | SPA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/spa/app.css">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+      <div class="container py-2">
+        <span class="navbar-brand">ラフ絵 to イラスト</span>
+        <div class="d-flex align-items-center gap-2 ms-auto" id="navControls">
+          <span class="badge rounded-pill bg-light text-dark d-none" id="navUserBadge"></span>
+          <div class="btn-group d-none" id="navViews">
+            <button class="btn btn-outline-light" type="button" data-view="generate">生成</button>
+            <button class="btn btn-outline-light" type="button" data-view="chat">チャット</button>
+          </div>
+          <button class="btn btn-outline-light d-none" type="button" id="logoutButton">ログアウト</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container pb-5" id="appRoot">
+      <div id="statusArea"></div>
+
+      <section id="loginView" class="row justify-content-center">
+        <div class="col-lg-5">
+          <div class="card glass-card">
+            <div class="card-body">
+              <h1 class="card-title mb-3">ログイン</h1>
+              <p class="text-white-50">API経由でログインし、生成・チャット機能を利用します。</p>
+              <form id="loginForm" class="d-flex flex-column gap-3">
+                <div>
+                  <label class="form-label" for="loginUsername">ユーザー名</label>
+                  <input class="form-control" id="loginUsername" name="username" autocomplete="username" required>
+                </div>
+                <div>
+                  <label class="form-label" for="loginPassword">パスワード</label>
+                  <input class="form-control" id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+                </div>
+                <button class="btn btn-primary" type="submit">ログイン</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="appView" class="d-none">
+        <section id="generateView">
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <div class="card glass-card h-100">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h2 class="card-title mb-0">イラスト生成</h2>
+                    <span class="badge badge-soft" id="generationStatusBadge">準備完了</span>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="generationMode">生成モード</label>
+                    <select class="form-select" id="generationMode"></select>
+                    <div class="form-text text-white-50" id="generationModeDescription"></div>
+                  </div>
+                  <form id="generateForm" class="d-flex flex-column gap-3" enctype="multipart/form-data">
+                    <div data-mode-panel="rough_with_instructions">
+                      <div class="section-card">
+                        <div class="section-header">
+                          <h5 class="section-title mb-1">ラフスケッチ</h5>
+                          <p class="section-description mb-0">ラフ画像を選択してください。</p>
+                        </div>
+                        <input class="form-control" id="roughImageInput" name="rough_image" type="file" accept="image/png, image/jpeg">
+                      </div>
+                      <div class="section-card">
+                        <div class="section-header">
+                          <h5 class="section-title mb-1">色とポーズの指示</h5>
+                          <p class="section-description mb-0">色味とポーズの詳細を入力します。</p>
+                        </div>
+                        <label class="form-label" for="colorInstruction">色の指示</label>
+                        <textarea class="form-control" id="colorInstruction" name="color_instruction" rows="3"></textarea>
+                        <label class="form-label mt-3" for="poseInstruction">ポーズの指示</label>
+                        <textarea class="form-control" id="poseInstruction" name="pose_instruction" rows="2"></textarea>
+                      </div>
+                    </div>
+
+                    <div data-mode-panel="reference_style_colorize" class="d-none">
+                      <div class="section-card">
+                        <div class="section-header">
+                          <h5 class="section-title mb-1">参照画像とラフ</h5>
+                          <p class="section-description mb-0">完成絵とラフの2枚を用意します。</p>
+                        </div>
+                        <label class="form-label" for="referenceImageInput">完成絵（参考）</label>
+                        <input class="form-control" id="referenceImageInput" name="reference_image" type="file" accept="image/png, image/jpeg">
+                        <label class="form-label mt-3" for="referenceRoughInput">ラフ画像</label>
+                        <input class="form-control" id="referenceRoughInput" name="rough_image" type="file" accept="image/png, image/jpeg">
+                      </div>
+                      <div class="section-card">
+                        <div class="section-header">
+                          <h5 class="section-title mb-1">追加指示</h5>
+                          <p class="section-description mb-0">仕上げ方の補足を入力します。</p>
+                        </div>
+                        <textarea class="form-control" id="referenceInstruction" name="reference_instruction" rows="3"></textarea>
+                      </div>
+                    </div>
+
+                    <div data-mode-panel="inpaint_outpaint" class="d-none">
+                      <div class="section-card">
+                        <div class="section-header">
+                          <h5 class="section-title mb-1">編集対象とマスク</h5>
+                          <p class="section-description mb-0">編集元画像とマスク画像をアップロードします。</p>
+                        </div>
+                        <label class="form-label" for="editBaseInput">編集元画像</label>
+                        <input class="form-control" id="editBaseInput" name="edit_base_image" type="file" accept="image/png, image/jpeg">
+                        <label class="form-label mt-3" for="editMaskInput">マスク画像</label>
+                        <input class="form-control" id="editMaskInput" name="edit_mask_image" type="file" accept="image/png, image/jpeg">
+                      </div>
+                      <div class="section-card">
+                        <div class="section-header">
+                          <h5 class="section-title mb-1">編集内容</h5>
+                          <p class="section-description mb-0">インペイント/アウトペイントを選択し、追加指示を入力します。</p>
+                        </div>
+                        <label class="form-label" for="editModeSelect">編集モード</label>
+                        <select class="form-select" id="editModeSelect" name="edit_mode">
+                          <option value="inpaint">インペイント</option>
+                          <option value="outpaint">アウトペイント</option>
+                        </select>
+                        <label class="form-label mt-3" for="editInstruction">追加指示</label>
+                        <textarea class="form-control" id="editInstruction" name="edit_instruction" rows="3"></textarea>
+                      </div>
+                    </div>
+
+                    <div id="generationOptions" class="section-card">
+                      <div class="section-header">
+                        <h5 class="section-title mb-1">詳細設定</h5>
+                        <p class="section-description mb-0">アスペクト比と解像度を必要に応じて指定します。</p>
+                      </div>
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label" for="aspectRatioSelect">アスペクト比</label>
+                          <select class="form-select" id="aspectRatioSelect" name="aspect_ratio"></select>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label" for="resolutionSelect">解像度</label>
+                          <select class="form-select" id="resolutionSelect" name="resolution"></select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button class="btn btn-primary" type="submit" id="generateButton">
+                      <span class="spinner-border spinner-border-sm me-2 d-none" id="generateSpinner"></span>
+                      <span id="generateButtonLabel">生成をリクエスト</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-5">
+              <div class="card glass-card mb-4">
+                <div class="card-body">
+                  <h3 class="card-title">生成プレビュー</h3>
+                  <div class="text-white-50" id="resultPlaceholder">まだ生成結果がありません。</div>
+                  <img id="resultImage" class="img-fluid rounded d-none mt-3" alt="生成結果プレビュー">
+                  <div class="d-grid gap-2 mt-3">
+                    <a class="btn btn-outline-light d-none" id="downloadLink" download="generated_image.png"><i class="bi bi-download me-1"></i> ダウンロード</a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card glass-card">
+                <div class="card-body">
+                  <h3 class="card-title">プリセット</h3>
+                  <p class="text-white-50">現在のモードに合わせて指示を保存・再利用できます。</p>
+                  <div class="d-flex gap-2 mb-3">
+                    <select class="form-select" id="presetSelect"></select>
+                    <button class="btn btn-outline-light" type="button" id="applyPreset">適用</button>
+                    <button class="btn btn-outline-light" type="button" id="deletePreset">削除</button>
+                  </div>
+                  <form id="presetForm" class="d-flex flex-column gap-2">
+                    <label class="form-label" for="presetName">プリセット名</label>
+                    <input class="form-control" id="presetName" name="name" maxlength="80" required>
+                    <button class="btn btn-outline-light" type="submit">保存</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="chatView" class="d-none">
+          <div class="row g-4">
+            <div class="col-lg-4">
+              <div class="card glass-card h-100">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h2 class="card-title mb-0">チャット履歴</h2>
+                    <button class="btn btn-outline-light btn-sm" type="button" id="newSessionButton"><i class="bi bi-plus-circle me-1"></i> 新規</button>
+                  </div>
+                  <div class="list-group chat-session-list" id="chatSessionList"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="card glass-card h-100">
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <h2 class="card-title mb-1">チャットセッション</h2>
+                      <div class="small text-white-50" id="chatModeHelper">モードを選択して送信します。</div>
+                    </div>
+                    <span class="badge badge-soft" id="currentSessionBadge">未選択</span>
+                  </div>
+                  <div class="chat-messages" id="chatMessages"></div>
+
+                  <form class="chat-input mt-3" id="chatForm">
+                    <input type="hidden" name="session_id" id="chatSessionId">
+
+                    <div class="chat-toolbar">
+                      <div class="d-flex flex-column w-100 gap-2">
+                        <label class="form-label" for="chatModeSelect">チャットモード</label>
+                        <select class="form-select" id="chatModeSelect" name="mode_id"></select>
+                      </div>
+                    </div>
+
+                    <div class="chat-input-body mt-3">
+                      <label class="form-label" for="chatMessage">メッセージ</label>
+                      <textarea class="form-control" id="chatMessage" name="message" rows="3" placeholder="相談内容や指示を入力してください"></textarea>
+                    </div>
+
+                    <div class="chat-extra mt-3 d-none" data-mode-visible="session_edit">
+                      <div class="alert alert-info border-0">直近の生成画像を使って再編集します。</div>
+                    </div>
+
+                    <div class="chat-extra mt-3 d-none" data-mode-visible="rough_with_instructions">
+                      <label class="form-label" for="chatRoughImage">ラフ画像</label>
+                      <input class="form-control" type="file" id="chatRoughImage" name="rough_image" accept="image/png, image/jpeg">
+                      <label class="form-label mt-2" for="chatColor">色の指示</label>
+                      <textarea class="form-control" id="chatColor" name="color_instruction" rows="2"></textarea>
+                      <label class="form-label mt-2" for="chatPose">ポーズ指示</label>
+                      <textarea class="form-control" id="chatPose" name="pose_instruction" rows="2"></textarea>
+                    </div>
+
+                    <div class="chat-extra mt-3 d-none" data-mode-visible="reference_style_colorize">
+                      <label class="form-label" for="chatReferenceImage">完成絵（参考）</label>
+                      <input class="form-control" type="file" id="chatReferenceImage" name="reference_image" accept="image/png, image/jpeg">
+                      <label class="form-label mt-2" for="chatReferenceRough">ラフ画像</label>
+                      <input class="form-control" type="file" id="chatReferenceRough" name="rough_image" accept="image/png, image/jpeg">
+                    </div>
+
+                    <div class="chat-extra mt-3 d-none" data-mode-visible="inpaint_outpaint">
+                      <label class="form-label" for="chatEditBase">編集元画像</label>
+                      <input class="form-control" type="file" id="chatEditBase" name="edit_base_image" accept="image/png, image/jpeg">
+                      <label class="form-label mt-2" for="chatEditMask">マスク画像</label>
+                      <input class="form-control" type="file" id="chatEditMask" name="edit_mask_image" accept="image/png, image/jpeg">
+                      <label class="form-label mt-2" for="chatEditMode">編集モード</label>
+                      <select class="form-select" id="chatEditMode" name="edit_mode">
+                        <option value="inpaint">インペイント</option>
+                        <option value="outpaint">アウトペイント</option>
+                      </select>
+                      <label class="form-label mt-2" for="chatEditInstruction">追加指示</label>
+                      <textarea class="form-control" id="chatEditInstruction" name="edit_instruction" rows="2"></textarea>
+                    </div>
+
+                    <div class="chat-actions mt-3">
+                      <button class="btn btn-primary" type="submit" id="chatSubmit"><i class="bi bi-send me-1"></i> 送信</button>
+                      <div class="text-white-50 small" id="chatStatus"></div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="adminView" class="d-none mt-4">
+          <div class="card glass-card">
+            <div class="card-body">
+              <h3 class="card-title">ユーザー追加</h3>
+              <p class="text-white-50">初期ユーザーのみが新規ユーザーを追加できます。</p>
+              <form id="signupForm" class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="signupUsername">ユーザー名</label>
+                  <input class="form-control" id="signupUsername" name="username" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="signupEmail">メールアドレス</label>
+                  <input class="form-control" id="signupEmail" name="email" type="email" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="signupPassword">パスワード</label>
+                  <input class="form-control" id="signupPassword" name="password" type="password" required>
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-outline-light" type="submit">ユーザーを作成</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/spa/app.js"></script>
+  </body>
+</html>

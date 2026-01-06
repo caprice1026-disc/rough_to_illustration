@@ -271,6 +271,7 @@ def run_edit_generation(
     *,
     base_file: Optional[FileStorage],
     base_data: Optional[str],
+    mask_file: Optional[FileStorage] = None,
     mask_data: Optional[str],
     edit_mode: str,
     edit_instruction: str,
@@ -282,9 +283,12 @@ def run_edit_generation(
     else:
         base_image = decode_uploaded_image_raw(base_file, label="編集元画像")
 
-    if not mask_data:
-        raise GenerationError("マスク画像を用意してください。エディタで描画して適用してください。")
-    mask_image = decode_data_url_image(mask_data, label="マスク画像")
+    if mask_data:
+        mask_image = decode_data_url_image(mask_data, label="マスク画像")
+    elif mask_file:
+        mask_image = decode_uploaded_image_raw(mask_file, label="マスク画像")
+    else:
+        raise GenerationError("マスク画像を用意してください。")
 
     base_image = ensure_rgb(base_image)
     mask_image = normalize_mask_image(mask_image)
