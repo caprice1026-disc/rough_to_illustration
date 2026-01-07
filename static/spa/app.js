@@ -8,6 +8,7 @@
   currentSessionId: null,
   currentView: 'generate',
   lastResult: null,
+  csrfToken: null,
 };
 
 const elements = {};
@@ -84,8 +85,28 @@ const clearStatus = () => {
   elements.statusArea.innerHTML = '';
 };
 
+const fetchCsrfToken = async () => {
+  const response = await fetch('/api/csrf', {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  const payload = await response.json();
+  state.csrfToken = payload.csrf_token || null;
+  return state.csrfToken;
+};
+
+const ensureCsrfToken = async () => {
+  if (state.csrfToken) return state.csrfToken;
+  return fetchCsrfToken();
+};
+
 const apiFetch = async (url, options = {}) => {
   const headers = options.headers ? { ...options.headers } : {};
+  const method = (options.method || 'GET').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const token = await ensureCsrfToken();
+    if (token) headers['X-CSRFToken'] = token;
+  }
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
   }

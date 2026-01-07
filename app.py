@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from flask import Flask, jsonify, redirect, request
+from flask_wtf.csrf import CSRFError
 
 from config import Config
-from extensions import db, login_manager
+from extensions import csrf, db, login_manager
 from models import User
 from views.api import api_bp
 from views.spa import spa_bp
@@ -22,8 +23,10 @@ def create_app(config_object: object | None = None) -> Flask:
 
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
     login_manager.login_view = "spa.index"
     register_auth_handlers()
+    register_security_handlers(app)
 
     with app.app_context():
         db.create_all()
@@ -72,6 +75,33 @@ def register_auth_handlers() -> None:
         if request.path.startswith("/api/"):
             return jsonify({"error": "認証が必要です。"}), 401
         return redirect("/")
+
+
+def register_security_handlers(app: Flask) -> None:
+    """Register CSRF and origin enforcement for API requests."""
+
+    @app.before_request
+    def enforce_api_origin():
+        if not request.path.startswith("/api/"):
+            return None
+        if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+            return None
+
+        host_url = request.host_url.rstrip("/")
+        origin = request.headers.get("Origin")
+        referer = request.headers.get("Referer")
+
+        if origin and not origin.startswith(host_url):
+            return jsonify({"error": "Invalid request origin."}), 403
+        if not origin and referer and not referer.startswith(host_url):
+            return jsonify({"error": "Invalid request origin."}), 403
+        return None
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error: CSRFError):  # type: ignore[override]
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "CSRF token missing or invalid."}), 400
+        return "CSRF token missing or invalid.", 400
 
 
 app = create_app()

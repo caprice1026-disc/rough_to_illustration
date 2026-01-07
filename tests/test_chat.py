@@ -34,10 +34,18 @@ def client(app):
 
 
 def login(client):
+    csrf_token = get_csrf_token(client)
     return client.post(
         "/api/auth/login",
         json={"username": "tester", "password": "password123"},
+        headers={"X-CSRFToken": csrf_token},
     )
+
+
+def get_csrf_token(client):
+    response = client.get("/api/csrf")
+    payload = json.loads(response.data)
+    return payload["csrf_token"]
 
 
 def test_chat_page_creates_session(client, app):
@@ -72,6 +80,7 @@ def test_text_chat_persists_messages(client, app, monkeypatch):
     response = client.post(
         "/api/chat/messages",
         data={"session_id": session_id, "mode_id": "text_chat", "message": "こんにちは"},
+        headers={"X-CSRFToken": get_csrf_token(client)},
     )
     assert response.status_code == 200
     payload = json.loads(response.data)

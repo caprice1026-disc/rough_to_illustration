@@ -5,6 +5,7 @@ from typing import Any
 
 from flask import Blueprint, abort, current_app, jsonify, request, send_file, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+from flask_wtf.csrf import generate_csrf
 
 from extensions import db
 from illust import MissingApiKeyError
@@ -126,6 +127,11 @@ def _extract_payload() -> dict[str, Any]:
 @api_bp.get("/health")
 def health():
     return _json({"status": "ok", "timestamp": datetime.utcnow().isoformat()})
+
+
+@api_bp.get("/csrf")
+def csrf_token():
+    return _json({"csrf_token": generate_csrf()})
 
 
 @api_bp.get("/me")
