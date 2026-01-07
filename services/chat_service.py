@@ -15,10 +15,13 @@ from illust import edit_image_with_mask, generate_image, generate_image_with_con
 from models import ChatAttachment, ChatMessage, ChatSession
 from services.generation_service import (
     GenerationError,
+    decode_image_bytes,
     decode_uploaded_image_raw,
     ensure_rgb,
     extension_for_mime_type,
+    mime_type_for_image,
     normalize_mask_image,
+    read_uploaded_bytes,
 )
 from services.prompt_builder import (
     build_chat_edit_prompt,
@@ -117,20 +120,15 @@ def load_chat_image_bytes(image_id: str) -> Optional[bytes]:
 
 
 def save_uploaded_image(file: Optional[FileStorage], *, label: str) -> StoredImage:
-    if file is None or file.filename == "":
-        raise GenerationError(f"{label}を選択してください。")
-
-    raw_bytes = file.read()
-    try:
-        image = Image.open(BytesIO(raw_bytes))
-        image.load()
-    except Exception as exc:  # noqa: BLE001
-        raise GenerationError("画像の読み込みに失敗しました。PNG/JPG/JPEG を確認してください。") from exc
-    finally:
-        file.stream.seek(0)
-
-    mime_type = file.mimetype or "image/png"
-    return persist_chat_image(raw_bytes, mime_type)
+    raw_bytes, filename, mime_type = read_uploaded_bytes(file, label=label, reset_stream=True)
+    image = decode_image_bytes(
+        raw_bytes,
+        label=label,
+        filename=filename,
+        mime_type=mime_type,
+        convert_to_rgb=False,
+    )
+    return persist_chat_image(raw_bytes, mime_type_for_image(image))
 
 
 def create_session(user_id: int, *, title: str) -> ChatSession:
