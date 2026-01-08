@@ -6,3 +6,4 @@ Pillow
 google-genai
 python-dotenv
 pytest
+gunicorn

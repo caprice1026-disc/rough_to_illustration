@@ -56,6 +56,25 @@ flask --app app.py run  # または python app.py
 ```
 ブラウザで `http://localhost:5000/` にアクセスし、SPA上のログインフォームから認証してください。ログインしないとAPI/生成機能は利用できません。
 
+## Dockerでの起動方法
+```bash
+docker build -t rough-to-illustration .
+docker run --rm -p 5000:5000 \
+  -e GEMINI_API_KEY="<GeminiのAPIキー>" \
+  -e SECRET_KEY="任意の秘密鍵" \
+  -e DATABASE_URL="sqlite:///app.db" \
+  -e APP_ENV="production" \
+  rough-to-illustration
+```
+
+### Docker起動時に指定する環境変数
+- `GEMINI_API_KEY` または `GOOGLE_API_KEY`: 必須。Gemini API のキー。
+- `SECRET_KEY`: 必須。Flaskのセッション暗号化に使用。
+- `DATABASE_URL`: 任意。未指定の場合はSQLiteファイルを利用。
+- `APP_ENV`: 任意。`production` で debug を無効化。
+- `APP_DEBUG`: 任意。`APP_ENV=production` 時は無視。
+- `INITIAL_USER_USERNAME` / `INITIAL_USER_EMAIL` / `INITIAL_USER_PASSWORD`: 任意。初回ユーザーを自動作成する場合に指定。
+
 ### UIのヒント
 - 画面上部の「生成」「チャット」タブで画面を切り替えられます。
 - 生成タブ内の「生成モード」セレクトで入力項目が切り替わります。
