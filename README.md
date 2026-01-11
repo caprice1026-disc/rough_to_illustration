@@ -47,6 +47,8 @@
    >>> u.set_password("password123")
    >>> db.session.add(u); db.session.commit(); exit()
    ```
+   - `APP_ENV=production` の場合、起動時に `db.create_all()` を自動実行しないため、初期化は上記の手順で手動実行してください。
+   - マイグレーション運用を行う場合は、Flask-Migrate/Alembic を導入して `flask db init` → `flask db migrate` → `flask db upgrade` の流れに切り替えてください。
 
 ## 起動方法
 ```bash
