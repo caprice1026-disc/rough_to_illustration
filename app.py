@@ -24,6 +24,7 @@ def create_app(config_object: object | None = None) -> Flask:
 
     apply_proxy_fix(app)
     ensure_secret_key(app)
+    ensure_database_url(app)
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
@@ -62,6 +63,19 @@ def ensure_secret_key(app: Flask) -> None:
     if not secret_key:
         app.logger.critical("SECRET_KEY is not set. Set it in .env before starting.")
         raise RuntimeError("SECRET_KEY is not set. Set it in .env before starting.")
+
+
+def ensure_database_url(app: Flask) -> None:
+    """本番環境で DATABASE_URL が設定されていない場合は起動を停止する。"""
+
+    app_env = (app.config.get("APP_ENV") or "").strip().lower()
+    if app_env != "production":
+        return
+
+    database_url = app.config.get("SQLALCHEMY_DATABASE_URI")
+    if not database_url:
+        app.logger.critical("DATABASE_URL が設定されていません。環境変数で指定してください。")
+        raise RuntimeError("DATABASE_URL が設定されていません。環境変数で指定してください。")
 
 
 def ensure_initial_user(app: Flask) -> None:

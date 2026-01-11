@@ -30,14 +30,18 @@
    ```bash
    pip install -r requirements.txt
    ```
-2. `.env` に API キーなどを設定
+2. `.env` に API キーなどを設定（ローカル開発専用）
    ```bash
    GEMINI_API_KEY="<GeminiのAPIキー>"     # 互換のため GOOGLE_API_KEY でも可
    SECRET_KEY="任意の秘密鍵"             # 必須: 未設定だと起動を停止します
-   DATABASE_URL="sqlite:///app.db"      # 任意、未指定ならSQLiteファイルを利用
+   DATABASE_URL="sqlite:///app.db"      # ローカル用: 未指定ならSQLiteファイルを利用
+   CHAT_IMAGE_BUCKET="your-bucket"      # チャット画像の保存先(GCS)
    APP_ENV="development"                # production で debug を強制無効化
    APP_DEBUG="true"                     # 任意: APP_ENV=production 時は無視
+   MAX_CONTENT_LENGTH="33554432"        # 任意: アップロード上限 (32MB)
+   MAX_FORM_MEMORY_SIZE="33554432"      # 任意: フォームメモリ上限 (32MB)
    ```
+   - `.env` はローカル開発専用です。本番（Cloud Run など）では Secret Manager から環境変数へ注入してください。
 3. データベース初期化と初回ユーザー作成（例）
    ```bash
    flask --app app.py shell
@@ -71,10 +75,11 @@ flask --app app.py run  # または python app.py
 ## Dockerでの起動方法
 ```bash
 docker build -t rough-to-illustration .
-docker run --rm -p 5000:5000 \
+docker run --rm -p 8080:8080 \
   -e GEMINI_API_KEY="<GeminiのAPIキー>" \
   -e SECRET_KEY="任意の秘密鍵" \
   -e DATABASE_URL="sqlite:///app.db" \
+  -e CHAT_IMAGE_BUCKET="your-bucket" \
   -e APP_ENV="production" \
   rough-to-illustration
 ```
@@ -82,12 +87,21 @@ docker run --rm -p 5000:5000 \
 ### Docker起動時に指定する環境変数
 - `GEMINI_API_KEY` または `GOOGLE_API_KEY`: 必須。Gemini API のキー。
 - `SECRET_KEY`: 必須。Flaskのセッション暗号化に使用。
-- `DATABASE_URL`: 任意。未指定の場合はSQLiteファイルを利用。
-- `APP_ENV`: 任意。`production` で debug を無効化。
+- `DATABASE_URL`: ローカルでは任意。本番では必須（未指定の場合は起動エラー）。
+- `CHAT_IMAGE_BUCKET`: 必須。チャット画像を保存するGCSバケット名。
+- `APP_ENV`: 本番は `production` を必須。`production` で debug を無効化。
 - `APP_DEBUG`: 任意。`APP_ENV=production` 時は無視。
+- `MAX_CONTENT_LENGTH` / `MAX_FORM_MEMORY_SIZE`: 任意。アップロード/フォームのサイズ上限（デフォルトは32MB）。
 - `INITIAL_USER_USERNAME` / `INITIAL_USER_EMAIL` / `INITIAL_USER_PASSWORD`: 任意。初回ユーザーを自動作成する場合に指定。
 
 ## 本番運用時の補足
+### Cloud Runでの推奨設定
+- `SECRET_KEY` / `GEMINI_API_KEY`（または `GOOGLE_API_KEY`）/ `DATABASE_URL` / `CHAT_IMAGE_BUCKET` は Secret Manager から環境変数へ注入する構成を推奨します。
+- `.env` はローカル開発専用です。本番では `.env` をコンテナ内に配置しない前提で運用してください（ローカルはSQLite、本番は外部DB + GCSバケットという差分を想定）。
+- 本番は `APP_ENV=production` を必須にします（設定されていない場合は起動エラーになります）。
+- `MAX_CONTENT_LENGTH` / `MAX_FORM_MEMORY_SIZE` のデフォルトは 32MB です。Cloud Run のリクエスト上限（32MB）に合わせ、必要に応じて32MB以下で調整してください。
+- Cloud Run では `PORT` 環境変数が自動で設定されるため、Docker起動も `PORT` に追従する構成になっています。
+
 ### HTTPS前提の設定
 本番環境で `APP_ENV=production` を指定すると、以下のセキュリティ関連設定が有効になります。
 - セッションCookieに `Secure` / `HttpOnly` を付与
@@ -99,8 +113,20 @@ HTTPS終端がロードバランサー側にある場合は、アプリケーシ
 ロードバランサーやリバースプロキシ配下で動作させる場合、`X-Forwarded-*` ヘッダーを正しく反映するために `ProxyFix` を適用しています。
 
 - `APP_ENV=production` のときのみ `ProxyFix` が有効になります。
-- プロキシ側で `X-Forwarded-Proto` / `X-Forwarded-For` / `X-Forwarded-Host` などを適切に付与してください。
+- Cloud Run はロードバランサー経由で `X-Forwarded-Proto` / `X-Forwarded-For` / `X-Forwarded-Host` などを付与するため、この前提を満たします。
+- それ以外のプロキシ構成では、同等の `X-Forwarded-*` ヘッダーを適切に付与してください。
 - 直接アプリケーションにアクセスさせる構成では、プロキシヘッダーを付与しないようにしてください。
+
+### データベース / Cloud SQL
+- `DATABASE_URL` は本番で必須です（未設定の場合は起動エラーになります）。
+- Cloud SQL を利用する場合は、SQLAlchemy が理解できる接続文字列を `DATABASE_URL` に設定してください。
+  - 例: Cloud Run の Cloud SQL 接続機能を使う場合は `/cloudsql/<INSTANCE_CONNECTION_NAME>` のUnixソケットを使った接続文字列を指定します。
+  - 例: 専用のPythonコネクタを使う場合は `cloud-sql-python-connector` を `requirements.txt` に追加し、`app.py` または `extensions.py` 側でエンジン生成ロジックを実装してください。
+- 現状は `app.py` の `db.create_all()` で初期化しています。本番運用ではマイグレーションツール（例: Flask-Migrate）の導入を検討してください。
+
+### チャット画像の保存先
+- チャット画像は Cloud Storage に保存されます。バケット名は `CHAT_IMAGE_BUCKET` で指定します。
+- オブジェクトパスは `chat_images/<image_id>` です。Cloud Run のサービスアカウントに読み書き権限を付与してください。
 
 ## 編集モード（インペイント/アウトペイント）
 - 「編集」モードを選択し、編集対象画像をアップロードするとエディタが開きます。

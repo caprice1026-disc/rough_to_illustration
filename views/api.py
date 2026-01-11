@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from datetime import datetime
+from io import BytesIO
 from typing import Any
 
 from flask import Blueprint, abort, current_app, jsonify, request, send_file, url_for
@@ -439,10 +440,10 @@ def chat_image(image_id: str):
     if not attachment:
         abort(404)
 
-    file_path = chat_service.chat_image_path(image_id)
-    if not file_path.exists():
+    raw_bytes = chat_service.load_chat_image_bytes(image_id)
+    if raw_bytes is None:
         abort(404)
-    return send_file(file_path, mimetype=attachment.mime_type)
+    return send_file(BytesIO(raw_bytes), mimetype=attachment.mime_type)
 
 
 @api_bp.post("/chat/messages")
