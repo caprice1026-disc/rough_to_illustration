@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Flask, jsonify, redirect, request
 from flask_wtf.csrf import CSRFError
+from sqlalchemy import inspect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
@@ -32,8 +33,12 @@ def create_app(config_object: object | None = None) -> Flask:
     register_security_handlers(app)
 
     with app.app_context():
-        db.create_all()
-        ensure_initial_user(app)
+        if should_create_tables(app):
+            db.create_all()
+        if is_user_table_ready():
+            ensure_initial_user(app)
+        else:
+            app.logger.info("データベース未初期化のためイニシャルユーザー作成をスキップしました。")
 
     register_blueprints(app)
     return app
@@ -42,7 +47,7 @@ def create_app(config_object: object | None = None) -> Flask:
 def apply_proxy_fix(app: Flask) -> None:
     """リバースプロキシ配下で X-Forwarded-* ヘッダーを反映する。"""
 
-    if app.config.get("APP_ENV", "").strip().lower() != "production":
+    if not is_production(app):
         return
 
     app.wsgi_app = ProxyFix(
@@ -62,6 +67,25 @@ def ensure_secret_key(app: Flask) -> None:
     if not secret_key:
         app.logger.critical("SECRET_KEY is not set. Set it in .env before starting.")
         raise RuntimeError("SECRET_KEY is not set. Set it in .env before starting.")
+
+
+def is_production(app: Flask) -> bool:
+    """APP_ENV が production かどうかを判定する。"""
+
+    return app.config.get("APP_ENV", "").strip().lower() == "production"
+
+
+def should_create_tables(app: Flask) -> bool:
+    """本番環境以外でのみテーブル作成を行う。"""
+
+    return not is_production(app)
+
+
+def is_user_table_ready() -> bool:
+    """User テーブルが存在するかを確認する。"""
+
+    inspector = inspect(db.engine)
+    return inspector.has_table(User.__tablename__)
 
 
 def ensure_initial_user(app: Flask) -> None:
