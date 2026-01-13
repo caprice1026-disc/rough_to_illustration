@@ -10,4 +10,3 @@ google-cloud-storage
 python-dotenv
 pytest
 gunicorn
-mysql-connector-python

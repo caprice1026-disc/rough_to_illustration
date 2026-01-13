@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, current_app, jsonify, redirect, request
+from flask.cli import with_appcontext
+from flask_migrate import upgrade
 from flask_wtf.csrf import CSRFError
+import click
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from sqlalchemy import inspect
@@ -34,9 +37,7 @@ def create_app(config_object: object | None = None) -> Flask:
     login_manager.login_view = "spa.index"
     register_auth_handlers()
     register_security_handlers(app)
-
-    with app.app_context():
-        ensure_initial_user(app)
+    register_cli(app)
 
     register_blueprints(app)
     return app
@@ -68,7 +69,7 @@ def ensure_secret_key(app: Flask) -> None:
 
 
 def ensure_database_url(app: Flask) -> None:
-    """本番環境で DATABASE_URL が設定されていない場合は起動を停止する。"""
+    """Ensure a production database is configured."""
 
     app_env = (app.config.get("APP_ENV") or "").strip().lower()
     if app_env != "production":
@@ -76,8 +77,13 @@ def ensure_database_url(app: Flask) -> None:
 
     database_url = app.config.get("SQLALCHEMY_DATABASE_URI")
     if not database_url:
-        app.logger.critical("DATABASE_URL が設定されていません。環境変数で指定してください。")
-        raise RuntimeError("DATABASE_URL が設定されていません。環境変数で指定してください。")
+        message = "Database is not configured. Set DATABASE_URL or DB_* env vars."
+        app.logger.critical(message)
+        raise RuntimeError(message)
+    if database_url.startswith("sqlite"):
+        message = "SQLite is not allowed in production. Configure MySQL via DATABASE_URL or DB_*."
+        app.logger.critical(message)
+        raise RuntimeError(message)
 
 
 def ensure_initial_user(app: Flask) -> None:
@@ -85,7 +91,9 @@ def ensure_initial_user(app: Flask) -> None:
 
     inspector = inspect(db.engine)
     if "user" not in inspector.get_table_names():
-        app.logger.info("ユーザーテーブルが存在しないためイニシャルユーザー作成をスキップしました。")
+        app.logger.info(
+            "User table not found. Run 'flask --app app.py db upgrade' or 'flask --app app.py init-db'."
+        )
         return
 
     username = app.config.get("INITIAL_USER_USERNAME")
@@ -151,6 +159,17 @@ def register_security_handlers(app: Flask) -> None:
         if request.path.startswith("/api/"):
             return jsonify({"error": "CSRF token missing or invalid."}), 400
         return "CSRF token missing or invalid.", 400
+
+
+def register_cli(app: Flask) -> None:
+    """Register CLI helpers for database initialization."""
+
+    @app.cli.command("init-db")
+    @with_appcontext
+    def init_db_command() -> None:
+        upgrade()
+        ensure_initial_user(current_app)
+        click.echo("Database initialized.")
 
 
 app = create_app()
