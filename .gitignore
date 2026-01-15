@@ -16,3 +16,4 @@ app.db
 instance/_utf8_test.txt
 instance/chat_images/
 .editorconfig
+test.py
