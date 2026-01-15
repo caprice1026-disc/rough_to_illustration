@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from flask import current_app
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+if config.config_file_name is None:
+    config.config_file_name = str(Path(__file__).with_name("alembic.ini"))
+
+file_config_path = Path(config.config_file_name)
+if file_config_path.exists():
+    fileConfig(str(file_config_path))
 
 
 def get_engine():
