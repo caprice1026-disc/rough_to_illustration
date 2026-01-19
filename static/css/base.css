@@ -84,7 +84,13 @@ textarea {
 textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 0.1rem rgba(31, 209, 249, 0.3);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--input-bg-focus);
+  color: var(--input-text);
+}
+
+.form-control:focus::placeholder,
+textarea:focus::placeholder {
+  color: rgba(185, 194, 230, 0.85);
 }
 
 .flash-stack {
