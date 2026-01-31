@@ -1,0 +1,56 @@
+substitutions:
+  _REGION: asia-northeast1
+  _SERVICE_NAME: rough-to-illustration
+  _MIGRATION_JOB: rough-to-illustration-migrate
+  _AR_REPO: cloud-run-source-deploy
+  _IMAGE_NAME: rough-to-illustration
+  _MIGRATION_ARGS: --app,app.py,db,upgrade
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - update
+      - ${_MIGRATION_JOB}
+      - --region=${_REGION}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA
+      - --command=flask
+      - --args=${_MIGRATION_ARGS}
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - execute
+      - ${_MIGRATION_JOB}
+      - --region=${_REGION}
+      - --wait
+      - --quiet
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE_NAME}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --quiet
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY

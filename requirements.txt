@@ -1,9 +1,12 @@
 Flask
+Flask-Migrate
 Flask-Login
 Flask-SQLAlchemy
 Flask-WTF
 Pillow
+PyMySQL
 google-genai
+google-cloud-storage
 python-dotenv
 pytest
 gunicorn

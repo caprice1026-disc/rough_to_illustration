@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import BytesIO
 from typing import Any
 
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, send_file, url_for
@@ -10,10 +11,10 @@ from models import ChatAttachment, ChatMessage, ChatSession
 from services.chat_service import (
     CHAT_MODES,
     add_message,
-    chat_image_path,
     create_session,
     generate_text_reply,
     last_assistant_image,
+    load_chat_image_bytes,
     run_edit_mode,
     run_reference_mode,
     run_rough_mode,
@@ -104,10 +105,10 @@ def image(image_id: str):
     if not attachment:
         abort(404)
 
-    file_path = chat_image_path(image_id)
-    if not file_path.exists():
+    raw_bytes = load_chat_image_bytes(image_id)
+    if raw_bytes is None:
         abort(404)
-    return send_file(file_path, mimetype=attachment.mime_type)
+    return send_file(BytesIO(raw_bytes), mimetype=attachment.mime_type)
 
 
 @chat_bp.route("/chat/messages", methods=["POST"])

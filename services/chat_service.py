@@ -7,6 +7,8 @@ from typing import Iterable, Optional
 from uuid import uuid4
 
 from flask import current_app
+from google.api_core.exceptions import NotFound
+from google.cloud import storage
 from PIL import Image
 from werkzeug.datastructures import FileStorage
 
@@ -91,32 +93,60 @@ class StoredImage:
     mime_type: str
 
 
-def _chat_images_dir() -> Path:
-    base = Path(current_app.instance_path) / "chat_images"
-    base.mkdir(parents=True, exist_ok=True)
-    return base
-
-
-def _chat_image_path(image_id: str) -> Path:
+def _chat_image_object_name(image_id: str) -> str:
     safe_name = Path(image_id).name
-    return _chat_images_dir() / safe_name
+    return f"chat_images/{safe_name}"
 
 
-def chat_image_path(image_id: str) -> Path:
-    return _chat_image_path(image_id)
+def _chat_image_storage_mode() -> str:
+    return (current_app.config.get("CHAT_IMAGE_STORAGE") or "local").strip().lower()
+
+
+def _chat_image_local_dir() -> Path:
+    base = current_app.config.get("CHAT_IMAGE_DIR") or "chat_images"
+    path = Path(base)
+    if not path.is_absolute():
+        path = Path(current_app.instance_path) / path
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _chat_image_bucket() -> storage.Bucket:
+    if _chat_image_storage_mode() != "gcs":
+        raise GenerationError("CHAT_IMAGE_STORAGE が gcs ではありません。")
+    bucket_name = current_app.config.get("CHAT_IMAGE_BUCKET")
+    if not bucket_name:
+        raise GenerationError("CHAT_IMAGE_BUCKET が設定されていません。")
+    client = storage.Client()
+    return client.bucket(bucket_name)
+
+
+def _chat_image_blob(image_id: str) -> storage.Blob:
+    return _chat_image_bucket().blob(_chat_image_object_name(image_id))
 
 
 def persist_chat_image(raw_bytes: bytes, mime_type: str) -> StoredImage:
     image_id = f"{uuid4().hex}{extension_for_mime_type(mime_type)}"
-    _chat_image_path(image_id).write_bytes(raw_bytes)
+    if _chat_image_storage_mode() == "gcs":
+        blob = _chat_image_blob(image_id)
+        blob.upload_from_string(raw_bytes, content_type=mime_type)
+    else:
+        target = _chat_image_local_dir() / image_id
+        target.write_bytes(raw_bytes)
     return StoredImage(image_id=image_id, mime_type=mime_type)
 
 
 def load_chat_image_bytes(image_id: str) -> Optional[bytes]:
-    path = _chat_image_path(image_id)
-    if not path.exists():
+    if _chat_image_storage_mode() == "gcs":
+        blob = _chat_image_blob(image_id)
+        try:
+            return blob.download_as_bytes()
+        except NotFound:
+            return None
+    local_path = _chat_image_local_dir() / Path(image_id).name
+    if not local_path.exists():
         return None
-    return path.read_bytes()
+    return local_path.read_bytes()
 
 
 def save_uploaded_image(file: Optional[FileStorage], *, label: str) -> StoredImage:
